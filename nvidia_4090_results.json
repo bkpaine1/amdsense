@@ -1,0 +1,56 @@
+{
+  "hardware": {
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "gpu_vram_gb": 23.5,
+    "gpu_compute_capability": "8.9",
+    "gpu_multiprocessors": 128,
+    "cuda_version": "12.4",
+    "torch_version": "2.4.1+cu124",
+    "cudnn_version": "90100",
+    "flash_attn_3": false,
+    "cpu": "AMD EPYC 7452 32-Core Processor",
+    "ram_gb": 503.6,
+    "max_sm_clock": "3105 MHz",
+    "max_mem_clock": "10501 MHz",
+    "power_limit": "450.00 W"
+  },
+  "training": {
+    "val_bpb": 1.843768,
+    "training_seconds": 300.0,
+    "total_seconds": 393.9,
+    "peak_vram_mb": 8819.8,
+    "mfu_percent": 7.74,
+    "total_tokens_M": 96.5,
+    "num_steps": 2944,
+    "num_params_M": 50.3,
+    "depth": 8,
+    "tok_per_sec": 320681,
+    "note": "FA3 unavailable on 4090 (SM89, needs SM90). Used F.scaled_dot_product_attention with is_causal=True. FlashAttention 2 auto-selected by PyTorch SDPA."
+  },
+  "sdpa": {
+    "sdpa_current": 0.231,
+    "sdpa_flash": 0.23,
+    "sdpa_efficient": 0.289,
+    "sdpa_math_fallback": 2.815,
+    "sdpa_head64": 0.213,
+    "sdpa_head128": 0.44,
+    "sdpa_head256": 0.925
+  },
+  "matmul": {
+    "gpu_peak_tflops_bf16": 165.2,
+    "matmul_1024x1024": {"ms": 0.016, "tflops_bf16": 135.24, "pct_peak": 81.9},
+    "matmul_2048x2048": {"ms": 0.101, "tflops_bf16": 169.34, "pct_peak": 102.5},
+    "matmul_4096x4096": {"ms": 0.887, "tflops_bf16": 155.01, "pct_peak": 93.8}
+  },
+  "nan": {
+    "large_values": "ok",
+    "small_gradients": "ok",
+    "exp_overflow": "inf",
+    "log_underflow": "ok",
+    "softmax_large": "ok",
+    "layernorm_tiny": "ok",
+    "reduce_sum_32k": "ok",
+    "reduce_mean_32k": "ok",
+    "reduce_var_32k": "ok"
+  }
+}
