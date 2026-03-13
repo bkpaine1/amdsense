@@ -86,7 +86,7 @@ We found real bugs. AMD engineering, please fix these:
 ## Hardware
 
 ### AMD Test Rig
-- **System**: ASUS ProArt PX13 laptop — $1,999 (March 2026 purchase price, now $2,899)
+- **System**: GMKTEC EVO X2 mini PC — $1,999 (Strix Halo platform)
 - **APU**: AMD Ryzen AI MAX+ 395
 - **GPU**: Radeon 8060S (gfx1151) — integrated
 - **Memory**: 128 GB unified (shared CPU/GPU, up to 96 GB allocatable as VRAM, ~112 GB with Linux kernel hacks)
