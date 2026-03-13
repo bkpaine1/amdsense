@@ -1,8 +1,8 @@
 # amdsense
 
-**A $0 AMD iGPU outscored a $1,400 RTX 4090 on ML training quality. Here's the data.**
+**A $1,999 AMD laptop outscored a $1,400 GPU (in a $2,500+ system) on ML training quality. Here's the data.**
 
-An autonomous AI research agent ran 93+ experiments on an AMD Radeon 8060S (Strix Halo integrated GPU, 64GB unified memory, 54W total system power). It found a recipe that achieves **val_bpb 1.227** — 33% better than the same recipe on an NVIDIA RTX 4090 (val_bpb 1.844).
+An autonomous AI research agent ran 93+ experiments on an AMD Radeon 8060S (Strix Halo integrated GPU, 128GB unified memory, 54W total system power). It found a recipe that achieves **val_bpb 1.227** — 33% better than the same recipe on an NVIDIA RTX 4090 (val_bpb 1.844).
 
 This is not a benchmark war. This is a message:
 
@@ -10,21 +10,40 @@ This is not a benchmark war. This is a message:
 
 **To AMD:** Your silicon works. Your software stack is why people stay on NVIDIA. Fix it.
 
+## The Real Cost Comparison
+
+Let's be honest about what each setup actually costs:
+
+| Component | AMD Strix Halo | NVIDIA 4090 Build |
+|-----------|:--------------:|:-----------------:|
+| GPU | Integrated (included) | RTX 4090: ~$1,400 |
+| CPU | Ryzen AI MAX+ 395 (included) | Comparable CPU: ~$350 |
+| Memory | 128 GB unified (included) | 64 GB DDR5: ~$180 |
+| Motherboard | Integrated (included) | ATX board: ~$180 |
+| PSU | 54W laptop charger (included) | 850W+ PSU: ~$130 |
+| Case + storage | Laptop (included) | Case + NVMe: ~$150 |
+| **Total** | **$1,999** | **~$2,390+** |
+| Power at wall | 54W | 550W+ system |
+| Electricity (8hr/day, 1yr) | ~$19/yr | ~$193/yr |
+
+The Strix Halo is a complete system — screen, keyboard, battery, WiFi. The 4090 build is a desktop tower that needs a monitor, costs $400 more, and drinks 10x the power. The AMD system has **128 GB unified memory** (allocatable up to 96 GB VRAM, ~112 GB with Linux kernel hacks) vs the 4090's hard 24 GB VRAM ceiling.
+
 ## The Numbers
 
 | Metric | AMD Radeon 8060S | NVIDIA RTX 4090 |
 |--------|:----------------:|:----------------:|
 | **val_bpb** | **1.227** | **1.844** |
-| Street price | $0 (in APU) | ~$1,400 |
-| Power draw | 54W system | 450W GPU alone |
+| System cost | $1,999 (complete) | ~$2,390+ (tower only) |
+| Power draw | 54W system | 550W+ system |
 | Throughput (tok/sec) | 51,000 | 320,681 |
 | MFU (utilization) | 25% | 7.7% |
-| VRAM used | 45 GB / 64 GB | 8.8 GB / 24 GB |
+| VRAM available | 96 GB (up to 112 GB) | 24 GB (hard limit) |
+| VRAM used | 45 GB / 128 GB | 8.8 GB / 24 GB |
 | SDPA Flash (ms) | 2.3 | 0.23 |
 | Matmul 4096 (TFLOPS) | 30.6 | 155.0 |
 | bf16 stability bugs | yes (documented) | none |
 
-NVIDIA is 6x faster on throughput. AMD gets 3x better hardware utilization and a 33% better training score on the same recipe in the same 5-minute budget.
+NVIDIA is 6x faster on throughput. AMD gets 3x better hardware utilization, 4x the memory ceiling, and a 33% better training score on the same recipe in the same 5-minute budget.
 
 ### Why AMD Wins on Quality
 
@@ -67,9 +86,10 @@ We found real bugs. AMD engineering, please fix these:
 ## Hardware
 
 ### AMD Test Rig
+- **System**: ASUS ProArt PX13 laptop — $1,999 (March 2026 purchase price, now $2,899)
 - **APU**: AMD Ryzen AI MAX+ 395
 - **GPU**: Radeon 8060S (gfx1151) — integrated
-- **Memory**: 64 GB unified (shared CPU/GPU)
+- **Memory**: 128 GB unified (shared CPU/GPU, up to 96 GB allocatable as VRAM, ~112 GB with Linux kernel hacks)
 - **TDP**: 54W total system
 - **PyTorch**: 2.11.0a0+rocm7.11.0a20260106 (TheROCk nightly)
 - **Attention**: AOTriton experimental via SDPA
