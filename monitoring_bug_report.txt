@@ -1,0 +1,222 @@
+==============================================
+gfx1151 Monitoring Bug Report
+Generated: 2026-03-15T10:14:51-04:00
+Kernel: 6.18.1-061801-generic
+==============================================
+
+=== SYSTEM INFO ===
+CPU: AMD RYZEN AI MAX+ 395 w/ Radeon 8060S
+GPU: N/A
+GPU Device ID: 0x1586
+N/A
+GPU Target: check amd-smi
+ROCm version: 7.2.0
+amd-smi version: AMDSMI Tool: 26.2.1+fc0010cf6a | AMDSMI Library version: 26.2.1 | ROCm version: 7.2.0 | amdgpu version: Linuxversion6.18.1-061801-generic(kernel@balboa)(x86_64-linux-gnu-gcc-15(Ubuntu15.2.0-4ubuntu4)15.2.0,GNUld(GNUBinutilsforUbuntu)2.45)#202512121839SMPPREEMPT_DYNAMICFriDec1219:19:06UTC2025 | hsmp version: N/A
+rocm-smi version: ROCM-SMI version: 4.0.0+fc0010cf6a
+
+=== amd-smi monitor (EXPECTED: all N/A on gfx1151) ===
+GPU  XCP  POWER  PWR_CAP   GPU_T   MEM_T   GFX_CLK   GFX%   MEM%  MEM_CLOCK
+  0    0    N/A      N/A     N/A     N/A       N/A    N/A    N/A        N/A
+
+=== amd-smi static — LIMIT section (EXPECTED: all N/A) ===
+    LIMIT:
+        PPT0:
+            MAX_POWER_LIMIT: N/A
+            MIN_POWER_LIMIT: N/A
+            SOCKET_POWER_LIMIT: N/A
+        PPT1:
+            MAX_POWER_LIMIT: N/A
+            MIN_POWER_LIMIT: N/A
+            SOCKET_POWER_LIMIT: N/A
+        SLOWDOWN_EDGE_TEMPERATURE: N/A
+        SLOWDOWN_HOTSPOT_TEMPERATURE: N/A
+        SLOWDOWN_VRAM_TEMPERATURE: N/A
+        SHUTDOWN_EDGE_TEMPERATURE: N/A
+        SHUTDOWN_HOTSPOT_TEMPERATURE: N/A
+        SHUTDOWN_VRAM_TEMPERATURE: N/A
+        PTL_STATE: N/A
+        PTL_FORMAT: N/A
+    DRIVER:
+        NAME: amdgpu
+        VERSION: Linuxversion6.18.1-061801-generic(kernel@balboa)(x86_64-linux-gnu-gcc-15(Ubuntu15.2.0-4ubuntu4)15.2.0,GNUld(GNUBinutilsforUbuntu)2.45)#202512121839SMPPREEMPT_DYNAMICFriDec1219:19:06UTC2025
+    BOARD:
+        MODEL_NUMBER: N/A
+        PRODUCT_SERIAL: N/A
+        FRU_ID: N/A
+        PRODUCT_NAME: Strix Halo [Radeon Graphics / Radeon 8050S Graphics / Radeon 8060S Graphics]
+        MANUFACTURER_NAME: Advanced Micro Devices, Inc. [AMD/ATI]
+    RAS:
+        EEPROM_VERSION: N/A
+        BAD_PAGE_THRESHOLD: N/A
+
+=== amd-smi metric (EXPECTED: all N/A) ===
+GPU: 0
+    USAGE: N/A
+    POWER:
+        SOCKET_POWER: N/A
+        GFX_VOLTAGE: N/A
+        SOC_VOLTAGE: N/A
+        MEM_VOLTAGE: N/A
+        THROTTLE_STATUS: N/A
+        POWER_MANAGEMENT: N/A
+    CLOCK: N/A
+    TEMPERATURE:
+        EDGE: 91 °C
+        HOTSPOT: N/A
+        MEM: N/A
+    PCIE:
+        WIDTH: N/A
+        SPEED: N/A
+        BANDWIDTH: N/A
+        REPLAY_COUNT: N/A
+        L0_TO_RECOVERY_COUNT: N/A
+        REPLAY_ROLL_OVER_COUNT: N/A
+        NAK_SENT_COUNT: N/A
+        NAK_RECEIVED_COUNT: N/A
+        CURRENT_BANDWIDTH_SENT: N/A
+        CURRENT_BANDWIDTH_RECEIVED: N/A
+        MAX_PACKET_SIZE: N/A
+        LC_PERF_OTHER_END_RECOVERY: N/A
+    ECC:
+        TOTAL_CORRECTABLE_COUNT: 0
+        TOTAL_UNCORRECTABLE_COUNT: 0
+        TOTAL_DEFERRED_COUNT: 0
+        CACHE_CORRECTABLE_COUNT: N/A
+        CACHE_UNCORRECTABLE_COUNT: N/A
+    ECC_BLOCKS: N/A
+    FAN:
+        SPEED: N/A
+        MAX: N/A
+        RPM: N/A
+        USAGE: N/A
+    VOLTAGE_CURVE:
+        POINT_0_FREQUENCY: N/A
+        POINT_0_VOLTAGE: N/A
+        POINT_1_FREQUENCY: N/A
+        POINT_1_VOLTAGE: N/A
+        POINT_2_FREQUENCY: N/A
+        POINT_2_VOLTAGE: N/A
+    OVERDRIVE: N/A
+    MEM_OVERDRIVE: N/A
+    PERF_LEVEL: AMDSMI_DEV_PERF_LEVEL_AUTO
+    XGMI_ERR: N/A
+    VOLTAGE:
+        VDDBOARD: N/A
+    ENERGY: N/A
+    MEM_USAGE:
+        TOTAL_VRAM: 65536 MB
+        USED_VRAM: 5070 MB
+        FREE_VRAM: 60466 MB
+        TOTAL_VISIBLE_VRAM: 65536 MB
+        USED_VISIBLE_VRAM: 5070 MB
+        FREE_VISIBLE_VRAM: 60466 MB
+
+=== rocm-smi (PARTIAL — gets some data) ===
+
+
+========================================= ROCm System Management Interface =========================================
+=================================================== Concise Info ===================================================
+Device  Node  IDs              Temp    Power     Partitions          SCLK  MCLK     Fan  Perf  PwrCap  VRAM%  GPU%  
+[3m              (DID,     GUID)  (Edge)  (Socket)  (Mem, Compute, ID)                                                 [0m
+====================================================================================================================
+0       1     0x1586,   27771  91.0°C  120.019W  N/A, N/A, 0         N/A   1000Mhz  0%   auto  N/A     7%     100%  
+====================================================================================================================
+=============================================== End of ROCm SMI Log ================================================
+
+=== rocm-smi detailed ===
+
+
+============================ ROCm System Management Interface ============================
+====================================== Temperature =======================================
+GPU[0]		: Temperature (Sensor edge) (C): 89.0
+==========================================================================================
+=============================== Current clock frequencies ================================
+GPU[0]		: mclk clock level: 2: (1000Mhz)
+GPU[0]		: sclk clock level: 1: (2784Mhz)
+==========================================================================================
+=================================== Power Consumption ====================================
+GPU[0]		: Current Socket Graphics Package Power (W): 119.085
+==========================================================================================
+===================================== KFD Processes ======================================
+KFD process information:
+PID   	PROCESS NAME	GPU(s)	VRAM USED 	SDMA USED	CU OCCUPANCY	
+953879	python3     	0     	0         	0        	UNKNOWN     	
+953707	python3     	1     	4885340160	0        	UNKNOWN     	
+==========================================================================================
+================================== Memory Usage (Bytes) ==================================
+GPU[0]		: VRAM Total Memory (B): 68719476736
+GPU[0]		: VRAM Total Used Memory (B): 5318778880
+GPU[0]		: VIS_VRAM Total Memory (B): 68719476736
+GPU[0]		: VIS_VRAM Total Used Memory (B): 5318778880
+GPU[0]		: GTT Total Memory (B): 32979947520
+GPU[0]		: GTT Total Used Memory (B): 395894784
+==========================================================================================
+================================== End of ROCm SMI Log ===================================
+
+=== SYSFS RAW DATA (PROOF the data exists) ===
+
+--- Power (hwmon) ---
+hwmon path: /sys/class/drm/card1/device/hwmon/hwmon6
+  power1_average: 119095000 µW (119.0W)
+  power1_cap: NOT EXPOSED
+  power1_cap_max: NOT EXPOSED
+  power1_cap_min: NOT EXPOSED
+
+--- Temperature (hwmon) ---
+  temp1_input: 89000 m°C (89.0°C)
+  temp1_crit: NOT EXPOSED
+  temp1_crit_hyst: NOT EXPOSED
+  temp2_input: NOT EXPOSED
+  temp3_input: NOT EXPOSED
+
+--- Clock frequencies ---
+  sclk levels:
+0: 600Mhz 
+1: 2787Mhz *
+2: 2900Mhz 
+  mclk levels:
+0: 400Mhz 
+1: 800Mhz 
+2: 1000Mhz *
+  Current freq (hwmon):
+    /sys/class/drm/card1/device/hwmon/hwmon6/freq1_input: 2787000000 Hz (2787MHz)
+
+--- GPU utilization ---
+  gpu_busy_percent: 100
+  mem_busy_percent: NOT EXPOSED
+
+--- VRAM ---
+  mem_info_vram_total: 68719476736
+  mem_info_vram_used:  5318778880
+
+--- Power profile / performance level ---
+  power_dpm_force_performance_level: auto
+  pp_power_profile_mode:
+  NOT EXPOSED
+
+--- Fan ---
+  pwm1: NOT EXPOSED
+  fan1_input: NOT EXPOSED
+
+--- PCIe ---
+  current_link_speed: 16.0 GT/s PCIe
+  current_link_width: 16
+
+==============================================
+SUMMARY
+==============================================
+
+amd-smi reports ALL N/A for power, temperature, clocks, utilization, and limits.
+rocm-smi gets PARTIAL data (temp, power, clocks) but misses power cap, fan, PCIe.
+The kernel driver (amdgpu via sysfs/hwmon) exposes the data correctly.
+
+Root cause hypothesis: amd-smi uses a different interface (likely amdsmi library)
+that doesn't have gfx1151 APU support. rocm-smi uses sysfs directly for some
+fields but falls back to amdsmi for others, explaining partial coverage.
+
+Impact: Users cannot monitor GPU health during ML training without raw sysfs reads.
+This is especially dangerous on APUs where thermal throttling and reboots occur
+under sustained ML workloads (we've experienced this at 87-90°C).
+
+Related: Linux 7.1 adds NPU power reporting (DRM_IOCTL_AMDXDNA_GET_INFO) for
+Ryzen AI. The GPU side needs the same attention.
