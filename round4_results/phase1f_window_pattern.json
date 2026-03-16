@@ -1,0 +1,130 @@
+[
+  {
+    "window_pattern": "\"SSSL\"",
+    "metrics": {
+      "wall_time": 381.2,
+      "val_bpb": 1.219519,
+      "training_seconds": 300.2,
+      "total_seconds": 377.6,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.24,
+      "total_tokens_M": 33.3,
+      "num_steps": 1016.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 110086
+    },
+    "status": "ok"
+  },
+  {
+    "window_pattern": "\"L\"",
+    "metrics": {
+      "wall_time": 379.6,
+      "val_bpb": 1.219293,
+      "training_seconds": 300.2,
+      "total_seconds": 377.6,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 30.44,
+      "total_tokens_M": 33.3,
+      "num_steps": 1015.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109456
+    },
+    "status": "ok"
+  },
+  {
+    "window_pattern": "\"LL\"",
+    "metrics": {
+      "wall_time": 379.5,
+      "val_bpb": 1.220241,
+      "training_seconds": 300.0,
+      "total_seconds": 377.4,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 30.46,
+      "total_tokens_M": 33.3,
+      "num_steps": 1015.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109463
+    },
+    "status": "ok"
+  },
+  {
+    "window_pattern": "\"SL\"",
+    "metrics": {
+      "wall_time": 379.7,
+      "val_bpb": 1.219605,
+      "training_seconds": 300.0,
+      "total_seconds": 377.7,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 27.0,
+      "total_tokens_M": 33.3,
+      "num_steps": 1016.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109724
+    },
+    "status": "ok"
+  },
+  {
+    "window_pattern": "\"SSLL\"",
+    "metrics": {
+      "wall_time": 379.9,
+      "val_bpb": 1.219934,
+      "training_seconds": 300.1,
+      "total_seconds": 377.9,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 26.94,
+      "total_tokens_M": 33.2,
+      "num_steps": 1014.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109655
+    },
+    "status": "ok"
+  },
+  {
+    "window_pattern": "\"SLSL\"",
+    "metrics": {
+      "wall_time": 380.3,
+      "val_bpb": 1.219905,
+      "training_seconds": 300.2,
+      "total_seconds": 378.3,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 26.93,
+      "total_tokens_M": 33.2,
+      "num_steps": 1014.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109088
+    },
+    "status": "ok"
+  },
+  {
+    "window_pattern": "\"SSSSL\"",
+    "metrics": {
+      "wall_time": 379.9,
+      "val_bpb": 1.219529,
+      "training_seconds": 300.2,
+      "total_seconds": 377.8,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.22,
+      "total_tokens_M": 33.3,
+      "num_steps": 1015.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109602
+    },
+    "status": "ok"
+  },
+  {
+    "window_pattern": "\"SSSSSL\"",
+    "metrics": {
+      "wall_time": 379.6,
+      "val_bpb": 1.219165,
+      "training_seconds": 300.1,
+      "total_seconds": 377.6,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.21,
+      "total_tokens_M": 33.2,
+      "num_steps": 1014.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109620
+    },
+    "status": "ok"
+  }
+]

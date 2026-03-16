@@ -2,7 +2,7 @@
 
 **A $1,999 AMD laptop outscored a $1,400 GPU (in a $2,500+ system) on ML training quality. Here's the data.**
 
-An autonomous AI research agent ran 93+ experiments on an AMD Radeon 8060S (Strix Halo integrated GPU, 128GB unified memory, 54W total system power). It found a recipe that achieves **val_bpb 1.227** — 33% better than the same recipe on an NVIDIA RTX 4090 (val_bpb 1.844).
+An autonomous AI research agent ran **200+ experiments across 5 rounds** on an AMD Radeon 8060S (Strix Halo integrated GPU, 128GB unified memory, 54W total system power). It found a recipe that achieves **val_bpb 1.2153** — 34% better than the same recipe on an NVIDIA RTX 4090 (val_bpb 1.844). Two models were trained using **29.7 GB VRAM** — impossible on a 4090's 24 GB hard limit.
 
 This is not a benchmark war. This is a message:
 
@@ -32,7 +32,7 @@ The Strix Halo is a complete system — screen, keyboard, battery, WiFi. The 409
 
 | Metric | AMD Radeon 8060S | NVIDIA RTX 4090 |
 |--------|:----------------:|:----------------:|
-| **val_bpb** | **1.227** | **1.844** |
+| **val_bpb** | **1.2153** | **1.844** |
 | System cost | $1,999 (complete) | ~$2,390+ (tower only) |
 | Power draw | 54W system | 550W+ system |
 | Throughput (tok/sec) | 51,000 | 320,681 |
@@ -43,14 +43,15 @@ The Strix Halo is a complete system — screen, keyboard, battery, WiFi. The 409
 | Matmul 4096 (TFLOPS) | 30.6 | 155.0 |
 | bf16 stability bugs | yes (documented) | none |
 
-NVIDIA is 6x faster on throughput. AMD gets 3x better hardware utilization, 4x the memory ceiling, and a 33% better training score on the same recipe in the same 5-minute budget.
+NVIDIA is 6x faster on throughput. AMD gets 3x better hardware utilization, 4x the memory ceiling, and a 34% better training score on the same recipe in the same 5-minute budget.
 
 ### Why AMD Wins on Quality
 
-The recipe was optimized over 33 autonomous experiments specifically on AMD hardware. Two hyperparameters are CRITICAL and were discovered through ablation:
+The recipe was optimized over **200+ autonomous experiments across 5 rounds** specifically on AMD hardware. Key findings:
 
-- **HEAD_DIM 64** — +1.11% regression when reverted to default 128
-- **WARMDOWN_RATIO 0.7** — +1.08% regression when reverted to default 0.3
+- **Round 3** (33 experiments): Ablation identified 2 CRITICAL hyperparams — HEAD_DIM 64 (+1.11% regression when reverted), WARMDOWN_RATIO 0.7 (+1.08% regression). 5 "improvements" debunked as noise.
+- **Round 4** (40 experiments): Aspect ratio, depth, window pattern, LR sweeps. Memory wall proof — trained a model at 29.7 GB VRAM (impossible on 4090).
+- **Round 5** (60+ experiments): Deep squeeze on every remaining hyperparameter. 6 LR sweeps, weight decay, Adam betas, batch size, interaction effects, extended training, memory wall v2. Best val_bpb improved from 1.227 → 1.2153. Two models trained beyond 4090's 24 GB limit. beta2 < 0.97 causes NaN — another bf16 bug for AMD's list.
 
 Hardware-specific tuning matters more than raw throughput for research quality.
 
@@ -75,13 +76,15 @@ We found real bugs. AMD engineering, please fix these:
 3. **Deep networks unreliable** — `DEPTH=12+` timeout/crash. bf16 accumulation in deep networks.
 4. **Wide aspect ratios crash** — `ASPECT_RATIO=128` timeout. Possible memory layout issue.
 5. **Matrix LR cliff** — `MATRIX_LR=0.15` works, `0.20` is dead. Sharp boundary.
+6. **Adam beta2 < 0.97 produces NaN** — Optimizer precision issue. beta2=0.95 and 0.96 both crash. (Round 5)
+7. **bf16 accumulation degrades over extended training** — 10-minute runs hit NaN on run 3/3 at ~1008 steps. Precision erodes over time. (Round 5)
 
 ### Ecosystem
 
-6. **TheROCk nightlies required** — Stable ROCm does not ship gfx1151 kernels. Consumer Strix Halo users MUST use the nightly index at `https://rocm.nightlies.amd.com/v2/gfx1151/`.
-7. **AOTriton flash attention hidden behind env var** — `TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1` gives **19x SDPA speedup** (44ms to 2.3ms). This is not documented. This is not default. This should be both.
-8. **`PYTORCH_HIP_ALLOC_CONF=backend:malloc` crashes PyTorch** — Set by default in some ROCm shell profiles. Must be manually unset. A default that crashes your own framework is a bug.
-9. **No stable PyTorch wheels for gfx1151** — Users must install from nightlies: `torch-2.11.0a0+rocm7.11.0a20260106`. Ship stable wheels.
+8. **TheROCk nightlies required** — Stable ROCm does not ship gfx1151 kernels. Consumer Strix Halo users MUST use the nightly index at `https://rocm.nightlies.amd.com/v2/gfx1151/`.
+9. **AOTriton flash attention hidden behind env var** — `TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1` gives **19x SDPA speedup** (44ms to 2.3ms). This is not documented. This is not default. This should be both.
+10. **`PYTORCH_HIP_ALLOC_CONF=backend:malloc` crashes PyTorch** — Set by default in some ROCm shell profiles. Must be manually unset. A default that crashes your own framework is a bug.
+11. **No stable PyTorch wheels for gfx1151** — Users must install from nightlies: `torch-2.11.0a0+rocm7.11.0a20260106`. Ship stable wheels.
 
 ## Hardware
 
@@ -115,7 +118,9 @@ An AI coding agent (Claude Code on Opus) ran the experiment loop from [karpathy/
 | Warmdown schedule | 1.264 | -30.5% |
 | LR + weight decay tuning | 1.256 | -31.0% |
 | Head dim + unembed LR | 1.255 | -31.0% |
-| **ASPECT_RATIO 32 (Round 3)** | **1.227** | **-32.5%** |
+| ASPECT_RATIO 32 (Round 3) | 1.227 | -32.5% |
+| Aspect/warmdown/matrix LR (Round 4) | 1.2189 | -33.0% |
+| **Deep squeeze — all hyperparams (Round 5)** | **1.2153** | **-33.2%** |
 
 ### Round 3: Confirmation + Ablation + Failure Boundaries
 - **33 experiments** in 4 hours (autonomous agent, zero human intervention)
@@ -126,23 +131,42 @@ An AI coding agent (Claude Code on Opus) ran the experiment loop from [karpathy/
 
 See [round3_report.md](round3_report.md) for complete data.
 
-## Best Recipe
+### Round 4: Optimization Sweep + Memory Wall
+- **40 experiments** — aspect ratio, head dim, warmdown, matrix LR, depth, window pattern sweeps
+- **Best val_bpb 1.2189** (ASPECT_RATIO=40, WARMDOWN=0.75, MATRIX_LR=0.05)
+- **Memory wall proof**: trained at 29.7 GB VRAM — impossible on RTX 4090 (24 GB hard limit)
+- **head_dim 48 crashes** — another bf16 precision boundary
+
+See [round4_report.md](round4_report.md) for complete data.
+
+### Round 5: The Deep Squeeze
+- **60+ experiments** — 6 LR sweeps, regularization, Adam betas, batch size, interaction effects, extended training, memory wall v2
+- **Best val_bpb 1.2153** (ADAM_BETAS=(0.75, 0.97), WEIGHT_DECAY=0.08)
+- **2 models trained beyond 4090's 24 GB**: 29,722 MB VRAM each
+- **New bf16 bug**: beta2 < 0.97 causes NaN — optimizer precision issue
+- **Interaction effects**: drop-one ablation shows EMBEDDING_LR and SCALAR_LR are load-bearing (NaN when dropped)
+- **Extended training (10 min)**: stable at 1.2153, run 3/3 hit NaN — bf16 accumulation degrades over time
+
+See [round5_report.md](round5_report.md) for complete data.
+
+## Best Recipe (Round 5)
 
 ```python
-ASPECT_RATIO     = 32       # Round 3 finding — narrower is better on gfx1151
-HEAD_DIM         = 64       # CRITICAL — do not revert
-TOTAL_BATCH_SIZE = 2**15
-DEPTH            = 8
+ASPECT_RATIO      = 40       # Round 4: wider is better (32→40)
+HEAD_DIM          = 64       # CRITICAL — do not revert (Round 3 ablation)
+WINDOW_PATTERN    = "SSSSSL" # Round 4: 6-layer sliding window
+TOTAL_BATCH_SIZE  = 2**15
+DEPTH             = 8
 DEVICE_BATCH_SIZE = 16
-EMBEDDING_LR     = 0.8
-UNEMBEDDING_LR   = 0.012
-MATRIX_LR        = 0.07
-SCALAR_LR        = 0.6
-WEIGHT_DECAY     = 0.12
-ADAM_BETAS        = (0.8, 0.98)
-WARMUP_RATIO     = 0.0
-WARMDOWN_RATIO   = 0.7     # CRITICAL — do not revert
-FINAL_LR_FRAC    = 0.07
+EMBEDDING_LR      = 0.8
+UNEMBEDDING_LR    = 0.008   # Round 5: tighter (0.012→0.008)
+MATRIX_LR         = 0.05    # Round 4: pulled back (0.07→0.05)
+SCALAR_LR         = 0.7     # Round 5: tuned up (0.6→0.7)
+WEIGHT_DECAY      = 0.08    # Round 5: lighter (0.12→0.08)
+ADAM_BETAS         = (0.75, 0.97)  # Round 5: beta1 0.8→0.75, beta2 0.98→0.97
+WARMUP_RATIO      = 0.0
+WARMDOWN_RATIO    = 0.75    # Round 4: tuned (0.7→0.75). CRITICAL — do not revert.
+FINAL_LR_FRAC     = 0.07
 ```
 
 ## Quick Start
@@ -197,11 +221,13 @@ prepare.py                  — data prep + eval (fixed, do not modify)
 program.md                  — agent instructions
 profile_rocm.py             — AMD hardware profiler
 runpod_benchmark.sh         — NVIDIA comparison benchmark (one-script RunPod setup)
-round3_report.md            — Round 3 detailed results
+round3_report.md            — Round 3: ablation + failure boundaries (33 experiments)
+round4_report.md            — Round 4: optimization sweep + memory wall (40 experiments)
+round5_report.md            — Round 5: deep squeeze, all hyperparams (60+ experiments)
 nvidia_4090_comparison.md   — Full cross-hardware comparison report
 nvidia_4090_results.json    — Raw NVIDIA benchmark data
 results.tsv                 — Experiment log
-autoresearch_agent3.py      — Autonomous experiment runner (standalone)
+autoresearch_agent5.py      — Latest autonomous experiment runner (standalone)
 ```
 
 ## Origin

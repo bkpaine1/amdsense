@@ -1,0 +1,259 @@
+[
+  {
+    "name": "baseline_for_reference",
+    "overrides": {},
+    "metrics": {
+      "wall_time": 380.5,
+      "val_bpb": 1.219474,
+      "training_seconds": 300.2,
+      "total_seconds": 378.5,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.25,
+      "total_tokens_M": 33.3,
+      "num_steps": 1016.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109720
+    },
+    "status": "ok",
+    "vram_mb": 3946.4,
+    "exceeds_4090": false
+  },
+  {
+    "name": "wide_aspect96_depth8",
+    "overrides": {
+      "ASPECT_RATIO": "96",
+      "DEPTH": "8",
+      "DEVICE_BATCH_SIZE": "8"
+    },
+    "metrics": {
+      "wall_time": 580.4,
+      "val_bpb": NaN,
+      "training_seconds": 300.4,
+      "total_seconds": 578.4,
+      "peak_vram_mb": 5248.9,
+      "mfu_percent": 38.4,
+      "total_tokens_M": 12.5,
+      "num_steps": 380.0,
+      "num_params_M": 94.4,
+      "tok_per_sec": 40100
+    },
+    "status": "CRASH",
+    "vram_mb": 5248.9,
+    "exceeds_4090": false
+  },
+  {
+    "name": "wide_aspect128_depth8",
+    "overrides": {
+      "ASPECT_RATIO": "128",
+      "DEPTH": "8",
+      "DEVICE_BATCH_SIZE": "4"
+    },
+    "metrics": {
+      "error": "timeout"
+    },
+    "status": "CRASH",
+    "vram_mb": 0,
+    "exceeds_4090": false
+  },
+  {
+    "name": "wide_aspect160_depth8",
+    "overrides": {
+      "ASPECT_RATIO": "160",
+      "DEPTH": "8",
+      "DEVICE_BATCH_SIZE": "4"
+    },
+    "metrics": {
+      "wall_time": 789.7,
+      "val_bpb": 1.874584,
+      "training_seconds": 300.6,
+      "total_seconds": 787.6,
+      "peak_vram_mb": 6068.0,
+      "mfu_percent": 42.2,
+      "total_tokens_M": 5.7,
+      "num_steps": 175.0,
+      "num_params_M": 220.2,
+      "tok_per_sec": 17869
+    },
+    "status": "ok",
+    "vram_mb": 6068.0,
+    "exceeds_4090": false
+  },
+  {
+    "name": "deep_aspect64_depth16",
+    "overrides": {
+      "ASPECT_RATIO": "64",
+      "DEPTH": "16",
+      "DEVICE_BATCH_SIZE": "8"
+    },
+    "metrics": {
+      "error": "timeout"
+    },
+    "status": "CRASH",
+    "vram_mb": 0,
+    "exceeds_4090": false
+  },
+  {
+    "name": "deep_aspect64_depth24",
+    "overrides": {
+      "ASPECT_RATIO": "64",
+      "DEPTH": "24",
+      "DEVICE_BATCH_SIZE": "4"
+    },
+    "metrics": {
+      "error": "timeout"
+    },
+    "status": "CRASH",
+    "vram_mb": 0,
+    "exceeds_4090": false
+  },
+  {
+    "name": "deep_aspect64_depth32",
+    "overrides": {
+      "ASPECT_RATIO": "64",
+      "DEPTH": "32",
+      "DEVICE_BATCH_SIZE": "4"
+    },
+    "metrics": {
+      "error": "timeout"
+    },
+    "status": "CRASH",
+    "vram_mb": 0,
+    "exceeds_4090": false
+  },
+  {
+    "name": "large_aspect96_depth16",
+    "overrides": {
+      "ASPECT_RATIO": "96",
+      "DEPTH": "16",
+      "DEVICE_BATCH_SIZE": "4"
+    },
+    "metrics": {
+      "error": "timeout"
+    },
+    "status": "CRASH",
+    "vram_mb": 0,
+    "exceeds_4090": false
+  },
+  {
+    "name": "large_aspect96_depth24",
+    "overrides": {
+      "ASPECT_RATIO": "96",
+      "DEPTH": "24",
+      "DEVICE_BATCH_SIZE": "2"
+    },
+    "metrics": {
+      "error": "timeout"
+    },
+    "status": "CRASH",
+    "vram_mb": 0,
+    "exceeds_4090": false
+  },
+  {
+    "name": "large_aspect128_depth16",
+    "overrides": {
+      "ASPECT_RATIO": "128",
+      "DEPTH": "16",
+      "DEVICE_BATCH_SIZE": "2"
+    },
+    "metrics": {
+      "error": "timeout"
+    },
+    "status": "CRASH",
+    "vram_mb": 0,
+    "exceeds_4090": false
+  },
+  {
+    "name": "monster_aspect128_depth24",
+    "overrides": {
+      "ASPECT_RATIO": "128",
+      "DEPTH": "24",
+      "DEVICE_BATCH_SIZE": "1"
+    },
+    "metrics": {
+      "error": "timeout"
+    },
+    "status": "CRASH",
+    "vram_mb": 0,
+    "exceeds_4090": false
+  },
+  {
+    "name": "monster_aspect128_depth32",
+    "overrides": {
+      "ASPECT_RATIO": "128",
+      "DEPTH": "32",
+      "DEVICE_BATCH_SIZE": "1"
+    },
+    "metrics": {
+      "wall_time": 92.0
+    },
+    "status": "CRASH",
+    "vram_mb": 0,
+    "exceeds_4090": false
+  },
+  {
+    "name": "bigbatch_2_17",
+    "overrides": {
+      "TOTAL_BATCH_SIZE": "2**17",
+      "DEVICE_BATCH_SIZE": "32"
+    },
+    "metrics": {
+      "wall_time": 459.9,
+      "val_bpb": 1.328099,
+      "training_seconds": 300.7,
+      "total_seconds": 457.8,
+      "peak_vram_mb": 7694.9,
+      "mfu_percent": 26.16,
+      "total_tokens_M": 35.5,
+      "num_steps": 271.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 113061
+    },
+    "status": "ok",
+    "vram_mb": 7694.9,
+    "exceeds_4090": false
+  },
+  {
+    "name": "bigbatch_2_18",
+    "overrides": {
+      "TOTAL_BATCH_SIZE": "2**18",
+      "DEVICE_BATCH_SIZE": "64"
+    },
+    "metrics": {
+      "wall_time": 451.5,
+      "val_bpb": 1.481162,
+      "training_seconds": 300.7,
+      "total_seconds": 449.4,
+      "peak_vram_mb": 15037.4,
+      "mfu_percent": 26.26,
+      "total_tokens_M": 37.0,
+      "num_steps": 141.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 113251
+    },
+    "status": "ok",
+    "vram_mb": 15037.4,
+    "exceeds_4090": false
+  },
+  {
+    "name": "bigbatch_2_19",
+    "overrides": {
+      "TOTAL_BATCH_SIZE": "2**19",
+      "DEVICE_BATCH_SIZE": "128"
+    },
+    "metrics": {
+      "wall_time": 476.5,
+      "val_bpb": 1.664371,
+      "training_seconds": 301.2,
+      "total_seconds": 474.3,
+      "peak_vram_mb": 29724.5,
+      "mfu_percent": 26.41,
+      "total_tokens_M": 39.8,
+      "num_steps": 76.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 112920
+    },
+    "status": "ok",
+    "vram_mb": 29724.5,
+    "exceeds_4090": true
+  }
+]

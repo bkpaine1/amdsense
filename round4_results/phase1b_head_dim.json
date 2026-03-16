@@ -1,0 +1,82 @@
+[
+  {
+    "head_dim": 48,
+    "metrics": {
+      "wall_time": 456.3,
+      "val_bpb": NaN,
+      "training_seconds": 300.1,
+      "total_seconds": 454.2,
+      "peak_vram_mb": 4213.5,
+      "mfu_percent": 23.63,
+      "total_tokens_M": 29.0,
+      "num_steps": 884.0,
+      "num_params_M": 27.4,
+      "tok_per_sec": 95023
+    },
+    "status": "CRASH"
+  },
+  {
+    "head_dim": 64,
+    "metrics": {
+      "wall_time": 378.2,
+      "val_bpb": 1.223616,
+      "training_seconds": 300.1,
+      "total_seconds": 376.2,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.26,
+      "total_tokens_M": 33.3,
+      "num_steps": 1016.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109869
+    },
+    "status": "ok"
+  },
+  {
+    "head_dim": 80,
+    "metrics": {
+      "wall_time": 463.9,
+      "val_bpb": 1.228928,
+      "training_seconds": 300.1,
+      "total_seconds": 461.8,
+      "peak_vram_mb": 3943.8,
+      "mfu_percent": 22.34,
+      "total_tokens_M": 29.5,
+      "num_steps": 900.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 96725
+    },
+    "status": "ok"
+  },
+  {
+    "head_dim": 96,
+    "metrics": {
+      "wall_time": 477.6,
+      "val_bpb": 1.245129,
+      "training_seconds": 300.2,
+      "total_seconds": 475.6,
+      "peak_vram_mb": 4640.0,
+      "mfu_percent": 22.2,
+      "total_tokens_M": 22.2,
+      "num_steps": 678.0,
+      "num_params_M": 33.0,
+      "tok_per_sec": 72684
+    },
+    "status": "ok"
+  },
+  {
+    "head_dim": 112,
+    "metrics": {
+      "wall_time": 462.1,
+      "val_bpb": 1.254968,
+      "training_seconds": 300.3,
+      "total_seconds": 460.0,
+      "peak_vram_mb": 4204.3,
+      "mfu_percent": 17.0,
+      "total_tokens_M": 20.9,
+      "num_steps": 639.0,
+      "num_params_M": 27.4,
+      "tok_per_sec": 68350
+    },
+    "status": "ok"
+  }
+]

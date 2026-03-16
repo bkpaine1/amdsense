@@ -1,0 +1,130 @@
+[
+  {
+    "final_lr_frac": 0.01,
+    "metrics": {
+      "wall_time": 381.4,
+      "val_bpb": 1.217058,
+      "training_seconds": 300.1,
+      "total_seconds": 379.4,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.23,
+      "total_tokens_M": 33.3,
+      "num_steps": 1015.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109960
+    },
+    "status": "ok"
+  },
+  {
+    "final_lr_frac": 0.03,
+    "metrics": {
+      "wall_time": 381.6,
+      "val_bpb": 1.216311,
+      "training_seconds": 300.3,
+      "total_seconds": 379.6,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.21,
+      "total_tokens_M": 33.3,
+      "num_steps": 1015.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109179
+    },
+    "status": "ok"
+  },
+  {
+    "final_lr_frac": 0.05,
+    "metrics": {
+      "wall_time": 381.4,
+      "val_bpb": 1.216081,
+      "training_seconds": 300.2,
+      "total_seconds": 379.4,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.22,
+      "total_tokens_M": 33.3,
+      "num_steps": 1015.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109001
+    },
+    "status": "ok"
+  },
+  {
+    "final_lr_frac": 0.07,
+    "metrics": {
+      "wall_time": 381.3,
+      "val_bpb": 1.215922,
+      "training_seconds": 300.2,
+      "total_seconds": 379.2,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.25,
+      "total_tokens_M": 33.3,
+      "num_steps": 1016.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109776
+    },
+    "status": "ok"
+  },
+  {
+    "final_lr_frac": 0.09,
+    "metrics": {
+      "wall_time": 381.5,
+      "val_bpb": 1.216918,
+      "training_seconds": 300.2,
+      "total_seconds": 379.5,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.24,
+      "total_tokens_M": 33.3,
+      "num_steps": 1016.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109544
+    },
+    "status": "ok"
+  },
+  {
+    "final_lr_frac": 0.12,
+    "metrics": {
+      "wall_time": 381.5,
+      "val_bpb": 1.217145,
+      "training_seconds": 300.3,
+      "total_seconds": 379.5,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.24,
+      "total_tokens_M": 33.3,
+      "num_steps": 1016.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109983
+    },
+    "status": "ok"
+  },
+  {
+    "final_lr_frac": 0.15,
+    "metrics": {
+      "wall_time": 381.4,
+      "val_bpb": 1.218733,
+      "training_seconds": 300.2,
+      "total_seconds": 379.4,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.25,
+      "total_tokens_M": 33.3,
+      "num_steps": 1016.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109824
+    },
+    "status": "ok"
+  },
+  {
+    "final_lr_frac": 0.2,
+    "metrics": {
+      "wall_time": 374.9,
+      "val_bpb": NaN,
+      "training_seconds": 300.1,
+      "total_seconds": 372.9,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.33,
+      "total_tokens_M": 33.4,
+      "num_steps": 1019.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 112532
+    },
+    "status": "CRASH"
+  }
+]

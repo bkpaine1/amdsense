@@ -1,0 +1,114 @@
+[
+  {
+    "aspect_ratio": 16,
+    "metrics": {
+      "wall_time": 437.3,
+      "val_bpb": 1.271777,
+      "training_seconds": 300.1,
+      "total_seconds": 434.1,
+      "peak_vram_mb": 1904.8,
+      "mfu_percent": 13.46,
+      "total_tokens_M": 64.0,
+      "num_steps": 1953.0,
+      "num_params_M": 7.9,
+      "tok_per_sec": 215047
+    },
+    "status": "ok"
+  },
+  {
+    "aspect_ratio": 20,
+    "metrics": {
+      "wall_time": 435.8,
+      "val_bpb": 1.235605,
+      "training_seconds": 300.1,
+      "total_seconds": 433.6,
+      "peak_vram_mb": 2577.8,
+      "mfu_percent": 18.78,
+      "total_tokens_M": 51.8,
+      "num_steps": 1582.0,
+      "num_params_M": 13.0,
+      "tok_per_sec": 170597
+    },
+    "status": "ok"
+  },
+  {
+    "aspect_ratio": 24,
+    "metrics": {
+      "wall_time": 354.7,
+      "val_bpb": 1.235671,
+      "training_seconds": 300.1,
+      "total_seconds": 352.6,
+      "peak_vram_mb": 2577.8,
+      "mfu_percent": 18.74,
+      "total_tokens_M": 51.7,
+      "num_steps": 1579.0,
+      "num_params_M": 13.0,
+      "tok_per_sec": 170902
+    },
+    "status": "ok"
+  },
+  {
+    "aspect_ratio": 28,
+    "metrics": {
+      "wall_time": 454.7,
+      "val_bpb": 1.228934,
+      "training_seconds": 300.1,
+      "total_seconds": 452.6,
+      "peak_vram_mb": 3258.9,
+      "mfu_percent": 21.53,
+      "total_tokens_M": 39.5,
+      "num_steps": 1206.0,
+      "num_params_M": 18.9,
+      "tok_per_sec": 130179
+    },
+    "status": "ok"
+  },
+  {
+    "aspect_ratio": 32,
+    "metrics": {
+      "wall_time": 367.0,
+      "val_bpb": 1.228548,
+      "training_seconds": 300.2,
+      "total_seconds": 364.9,
+      "peak_vram_mb": 3258.9,
+      "mfu_percent": 21.5,
+      "total_tokens_M": 39.5,
+      "num_steps": 1204.0,
+      "num_params_M": 18.9,
+      "tok_per_sec": 130563
+    },
+    "status": "ok"
+  },
+  {
+    "aspect_ratio": 40,
+    "metrics": {
+      "wall_time": 457.3,
+      "val_bpb": 1.223529,
+      "training_seconds": 300.2,
+      "total_seconds": 455.2,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.3,
+      "total_tokens_M": 33.4,
+      "num_steps": 1018.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109985
+    },
+    "status": "ok"
+  },
+  {
+    "aspect_ratio": 48,
+    "metrics": {
+      "wall_time": 470.2,
+      "val_bpb": 1.226083,
+      "training_seconds": 300.2,
+      "total_seconds": 468.1,
+      "peak_vram_mb": 4645.4,
+      "mfu_percent": 28.44,
+      "total_tokens_M": 28.4,
+      "num_steps": 866.0,
+      "num_params_M": 33.0,
+      "tok_per_sec": 92932
+    },
+    "status": "ok"
+  }
+]

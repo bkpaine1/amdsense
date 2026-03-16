@@ -1,0 +1,199 @@
+[
+  {
+    "config": "all_combined",
+    "overrides": {
+      "EMBEDDING_LR": "0.8",
+      "UNEMBEDDING_LR": "0.008",
+      "SCALAR_LR": "0.7",
+      "FINAL_LR_FRAC": "0.07",
+      "MATRIX_LR": "0.05",
+      "WEIGHT_DECAY": "0.08",
+      "ADAM_BETAS": "(0.75, 0.97)",
+      "TOTAL_BATCH_SIZE": "2**15",
+      "DEVICE_BATCH_SIZE": "16"
+    },
+    "metrics": {
+      "wall_time": 375.2,
+      "val_bpb": NaN,
+      "training_seconds": 300.2,
+      "total_seconds": 373.2,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.25,
+      "total_tokens_M": 33.3,
+      "num_steps": 1016.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 112776
+    },
+    "status": "CRASH"
+  },
+  {
+    "config": "r4_baseline",
+    "overrides": {},
+    "metrics": {
+      "wall_time": 381.7,
+      "val_bpb": 1.220064,
+      "training_seconds": 300.3,
+      "total_seconds": 379.7,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.22,
+      "total_tokens_M": 33.3,
+      "num_steps": 1015.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109394
+    },
+    "status": "ok"
+  },
+  {
+    "config": "drop_EMBEDDING_LR",
+    "dropped": "EMBEDDING_LR",
+    "metrics": {
+      "wall_time": 376.0,
+      "val_bpb": NaN,
+      "training_seconds": 300.2,
+      "total_seconds": 374.0,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.27,
+      "total_tokens_M": 33.3,
+      "num_steps": 1017.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 112982
+    },
+    "status": "CRASH"
+  },
+  {
+    "config": "drop_UNEMBEDDING_LR",
+    "dropped": "UNEMBEDDING_LR",
+    "metrics": {
+      "wall_time": 381.3,
+      "val_bpb": 1.222265,
+      "training_seconds": 300.1,
+      "total_seconds": 379.3,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.16,
+      "total_tokens_M": 33.2,
+      "num_steps": 1012.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109601
+    },
+    "status": "ok"
+  },
+  {
+    "config": "drop_SCALAR_LR",
+    "dropped": "SCALAR_LR",
+    "metrics": {
+      "wall_time": 375.3,
+      "val_bpb": NaN,
+      "training_seconds": 300.1,
+      "total_seconds": 373.3,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.23,
+      "total_tokens_M": 33.3,
+      "num_steps": 1015.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 112237
+    },
+    "status": "CRASH"
+  },
+  {
+    "config": "drop_FINAL_LR_FRAC",
+    "dropped": "FINAL_LR_FRAC",
+    "metrics": {
+      "wall_time": 381.2,
+      "val_bpb": 1.215053,
+      "training_seconds": 300.1,
+      "total_seconds": 379.2,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.23,
+      "total_tokens_M": 33.3,
+      "num_steps": 1015.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109376
+    },
+    "status": "ok"
+  },
+  {
+    "config": "drop_MATRIX_LR",
+    "dropped": "MATRIX_LR",
+    "metrics": {
+      "wall_time": 381.2,
+      "val_bpb": 1.214631,
+      "training_seconds": 300.2,
+      "total_seconds": 379.2,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.27,
+      "total_tokens_M": 33.3,
+      "num_steps": 1017.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 110059
+    },
+    "status": "ok"
+  },
+  {
+    "config": "drop_WEIGHT_DECAY",
+    "dropped": "WEIGHT_DECAY",
+    "metrics": {
+      "wall_time": 381.5,
+      "val_bpb": 1.215472,
+      "training_seconds": 300.2,
+      "total_seconds": 379.4,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.24,
+      "total_tokens_M": 33.3,
+      "num_steps": 1016.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109637
+    },
+    "status": "ok"
+  },
+  {
+    "config": "drop_ADAM_BETAS",
+    "dropped": "ADAM_BETAS",
+    "metrics": {
+      "wall_time": 382.2,
+      "val_bpb": 1.218711,
+      "training_seconds": 300.1,
+      "total_seconds": 380.0,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 24.5,
+      "total_tokens_M": 32.3,
+      "num_steps": 986.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109575
+    },
+    "status": "ok"
+  },
+  {
+    "config": "drop_TOTAL_BATCH_SIZE",
+    "dropped": "TOTAL_BATCH_SIZE",
+    "metrics": {
+      "wall_time": 381.0,
+      "val_bpb": 1.215368,
+      "training_seconds": 300.0,
+      "total_seconds": 379.0,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.26,
+      "total_tokens_M": 33.3,
+      "num_steps": 1016.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109683
+    },
+    "status": "ok"
+  },
+  {
+    "config": "drop_DEVICE_BATCH_SIZE",
+    "dropped": "DEVICE_BATCH_SIZE",
+    "metrics": {
+      "wall_time": 381.4,
+      "val_bpb": 1.21538,
+      "training_seconds": 300.3,
+      "total_seconds": 379.3,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.24,
+      "total_tokens_M": 33.3,
+      "num_steps": 1016.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109955
+    },
+    "status": "ok"
+  }
+]

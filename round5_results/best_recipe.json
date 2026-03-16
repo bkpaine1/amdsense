@@ -1,0 +1,17 @@
+{
+  "ASPECT_RATIO": "40",
+  "HEAD_DIM": "64",
+  "WINDOW_PATTERN": "\"SSSSSL\"",
+  "TOTAL_BATCH_SIZE": "2**15",
+  "EMBEDDING_LR": "0.8",
+  "UNEMBEDDING_LR": "0.008",
+  "MATRIX_LR": "0.05",
+  "SCALAR_LR": "0.7",
+  "WEIGHT_DECAY": "0.08",
+  "ADAM_BETAS": "(0.75, 0.97)",
+  "WARMUP_RATIO": "0.0",
+  "WARMDOWN_RATIO": "0.75",
+  "FINAL_LR_FRAC": "0.07",
+  "DEPTH": "8",
+  "DEVICE_BATCH_SIZE": "16"
+}

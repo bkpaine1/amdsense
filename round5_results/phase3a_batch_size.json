@@ -1,0 +1,94 @@
+[
+  {
+    "total_batch": "2**14",
+    "device_batch": "8",
+    "metrics": {
+      "wall_time": 455.0,
+      "val_bpb": NaN,
+      "training_seconds": 300.0,
+      "total_seconds": 452.7,
+      "peak_vram_mb": 2110.9,
+      "mfu_percent": 24.49,
+      "total_tokens_M": 32.1,
+      "num_steps": 1961.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 108015
+    },
+    "status": "CRASH"
+  },
+  {
+    "total_batch": "2**14",
+    "device_batch": "16",
+    "metrics": {
+      "wall_time": 1.8
+    },
+    "status": "CRASH"
+  },
+  {
+    "total_batch": "2**15",
+    "device_batch": "16",
+    "metrics": {
+      "wall_time": 381.3,
+      "val_bpb": 1.215442,
+      "training_seconds": 300.1,
+      "total_seconds": 379.3,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.23,
+      "total_tokens_M": 33.3,
+      "num_steps": 1015.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109700
+    },
+    "status": "ok"
+  },
+  {
+    "total_batch": "2**15",
+    "device_batch": "32",
+    "metrics": {
+      "wall_time": 1.8
+    },
+    "status": "CRASH"
+  },
+  {
+    "total_batch": "2**16",
+    "device_batch": "16",
+    "metrics": {
+      "wall_time": 394.5,
+      "val_bpb": 1.314707,
+      "training_seconds": 300.7,
+      "total_seconds": 392.4,
+      "peak_vram_mb": 4022.6,
+      "mfu_percent": 24.66,
+      "total_tokens_M": 32.9,
+      "num_steps": 502.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 91130
+    },
+    "status": "ok"
+  },
+  {
+    "total_batch": "2**16",
+    "device_batch": "32",
+    "metrics": {
+      "wall_time": 383.6,
+      "val_bpb": 1.226026,
+      "training_seconds": 300.6,
+      "total_seconds": 381.5,
+      "peak_vram_mb": 7617.4,
+      "mfu_percent": 25.82,
+      "total_tokens_M": 34.4,
+      "num_steps": 525.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 111365
+    },
+    "status": "ok"
+  },
+  {
+    "total_batch": "3*2**14",
+    "device_batch": "16",
+    "metrics": {
+      "wall_time": 1.8
+    },
+    "status": "CRASH"
+  }
+]
