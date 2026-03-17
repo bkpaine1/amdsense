@@ -1,0 +1,98 @@
+[
+  {
+    "mlp_ratio": 2,
+    "metrics": {
+      "wall_time": 387.0,
+      "val_bpb": 1.223923,
+      "training_seconds": 300.3,
+      "total_seconds": 385.0,
+      "peak_vram_mb": 3275.1,
+      "mfu_percent": 24.86,
+      "total_tokens_M": 36.5,
+      "num_steps": 1115.0,
+      "num_params_M": 22.3,
+      "tok_per_sec": 120316
+    },
+    "status": "ok"
+  },
+  {
+    "mlp_ratio": 3,
+    "metrics": {
+      "wall_time": 390.4,
+      "val_bpb": 1.224263,
+      "training_seconds": 300.0,
+      "total_seconds": 388.3,
+      "peak_vram_mb": 3610.7,
+      "mfu_percent": 25.96,
+      "total_tokens_M": 34.8,
+      "num_steps": 1062.0,
+      "num_params_M": 23.9,
+      "tok_per_sec": 114510
+    },
+    "status": "ok"
+  },
+  {
+    "mlp_ratio": 4,
+    "metrics": {
+      "wall_time": 380.9,
+      "val_bpb": 1.214795,
+      "training_seconds": 300.1,
+      "total_seconds": 378.9,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 27.03,
+      "total_tokens_M": 33.3,
+      "num_steps": 1017.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109708
+    },
+    "status": "ok"
+  },
+  {
+    "mlp_ratio": 5,
+    "metrics": {
+      "wall_time": 397.0,
+      "val_bpb": 1.215493,
+      "training_seconds": 300.1,
+      "total_seconds": 395.0,
+      "peak_vram_mb": 4282.5,
+      "mfu_percent": 28.1,
+      "total_tokens_M": 32.1,
+      "num_steps": 979.0,
+      "num_params_M": 27.2,
+      "tok_per_sec": 105266
+    },
+    "status": "ok"
+  },
+  {
+    "mlp_ratio": 6,
+    "metrics": {
+      "wall_time": 400.5,
+      "val_bpb": 1.219801,
+      "training_seconds": 300.3,
+      "total_seconds": 398.4,
+      "peak_vram_mb": 4618.9,
+      "mfu_percent": 28.34,
+      "total_tokens_M": 30.1,
+      "num_steps": 920.0,
+      "num_params_M": 28.8,
+      "tok_per_sec": 98810
+    },
+    "status": "ok"
+  },
+  {
+    "mlp_ratio": 8,
+    "metrics": {
+      "wall_time": 401.3,
+      "val_bpb": NaN,
+      "training_seconds": 300.3,
+      "total_seconds": 399.3,
+      "peak_vram_mb": 5291.8,
+      "mfu_percent": 30.64,
+      "total_tokens_M": 28.6,
+      "num_steps": 874.0,
+      "num_params_M": 32.1,
+      "tok_per_sec": 94285
+    },
+    "status": "CRASH"
+  }
+]

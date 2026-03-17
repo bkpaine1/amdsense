@@ -1,0 +1,162 @@
+[
+  {
+    "window_pattern": "\"SSSSSL\"",
+    "metrics": {
+      "wall_time": 457.0,
+      "val_bpb": NaN,
+      "training_seconds": 300.2,
+      "total_seconds": 453.3,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.47,
+      "total_tokens_M": 33.6,
+      "num_steps": 1025.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 112565
+    },
+    "status": "CRASH"
+  },
+  {
+    "window_pattern": "\"SSSSSSL\"",
+    "metrics": {
+      "wall_time": 384.8,
+      "val_bpb": 1.215246,
+      "training_seconds": 300.2,
+      "total_seconds": 382.8,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.2,
+      "total_tokens_M": 33.2,
+      "num_steps": 1014.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109374
+    },
+    "status": "ok"
+  },
+  {
+    "window_pattern": "\"SSSL\"",
+    "metrics": {
+      "wall_time": 375.8,
+      "val_bpb": NaN,
+      "training_seconds": 300.3,
+      "total_seconds": 373.8,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 25.87,
+      "total_tokens_M": 34.1,
+      "num_steps": 1041.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 112064
+    },
+    "status": "CRASH"
+  },
+  {
+    "window_pattern": "\"SSL\"",
+    "metrics": {
+      "wall_time": 375.9,
+      "val_bpb": NaN,
+      "training_seconds": 300.2,
+      "total_seconds": 373.8,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 26.22,
+      "total_tokens_M": 33.4,
+      "num_steps": 1020.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 112604
+    },
+    "status": "CRASH"
+  },
+  {
+    "window_pattern": "\"SSSSLL\"",
+    "metrics": {
+      "wall_time": 381.5,
+      "val_bpb": 1.215442,
+      "training_seconds": 300.2,
+      "total_seconds": 379.5,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 26.06,
+      "total_tokens_M": 33.2,
+      "num_steps": 1014.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109698
+    },
+    "status": "ok"
+  },
+  {
+    "window_pattern": "\"SLSLSL\"",
+    "metrics": {
+      "wall_time": 381.2,
+      "val_bpb": 1.215067,
+      "training_seconds": 300.1,
+      "total_seconds": 379.2,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 26.95,
+      "total_tokens_M": 33.2,
+      "num_steps": 1014.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109197
+    },
+    "status": "ok"
+  },
+  {
+    "window_pattern": "\"SSSLSL\"",
+    "metrics": {
+      "wall_time": 375.4,
+      "val_bpb": NaN,
+      "training_seconds": 300.1,
+      "total_seconds": 373.4,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 26.77,
+      "total_tokens_M": 34.1,
+      "num_steps": 1041.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 112513
+    },
+    "status": "CRASH"
+  },
+  {
+    "window_pattern": "\"SSSSLSL\"",
+    "metrics": {
+      "wall_time": 375.7,
+      "val_bpb": NaN,
+      "training_seconds": 300.3,
+      "total_seconds": 373.7,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 26.11,
+      "total_tokens_M": 33.3,
+      "num_steps": 1016.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 112633
+    },
+    "status": "CRASH"
+  },
+  {
+    "window_pattern": "\"SSSSSSSSL\"",
+    "metrics": {
+      "wall_time": 375.6,
+      "val_bpb": NaN,
+      "training_seconds": 300.3,
+      "total_seconds": 373.6,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 24.44,
+      "total_tokens_M": 33.4,
+      "num_steps": 1019.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 112230
+    },
+    "status": "CRASH"
+  },
+  {
+    "window_pattern": "\"LLLLLL\"",
+    "metrics": {
+      "wall_time": 381.2,
+      "val_bpb": 1.215255,
+      "training_seconds": 300.1,
+      "total_seconds": 379.2,
+      "peak_vram_mb": 3946.4,
+      "mfu_percent": 30.45,
+      "total_tokens_M": 33.3,
+      "num_steps": 1015.0,
+      "num_params_M": 25.6,
+      "tok_per_sec": 109998
+    },
+    "status": "ok"
+  }
+]
