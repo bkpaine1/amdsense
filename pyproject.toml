@@ -3,7 +3,7 @@ name = "autoresearch"
 version = "0.1.0"
 description = "Autonomous pretraining research swarm"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.14"
 dependencies = [
     "kernels>=0.11.7",
     "matplotlib>=3.10.8",
@@ -13,19 +13,40 @@ dependencies = [
     "requests>=2.32.0",
     "rustbpe>=0.1.0",
     "tiktoken>=0.11.0",
-    "torch>=2.9.1",
+    "torch==2.11.0a0+rocm7.11.0a20260106",
+    "rocm==7.11.0a20260106",
+    "rocm-sdk-core==7.11.0a20260106",
+    "triton==3.6.0+git03c08237.rocm7.11.0a20260106",
 ]
 
 [tool.uv]
 prerelease = "allow"
 index-strategy = "unsafe-best-match"
+environments = ["sys_platform == 'linux' and python_version >= '3.12' and python_version < '3.13'"]
+override-dependencies = [
+    "triton==3.6.0+git03c08237.rocm7.11.0a20260106",
+]
 
 [tool.uv.sources]
 torch = [
+    { index = "therock-gfx1151" },
+]
+rocm = [
+    { index = "therock-gfx1151" },
+]
+rocm-sdk-core = [
+    { index = "therock-gfx1151" },
+]
+rocm-sdk-libraries-gfx1151 = [
+    { index = "therock-gfx1151" },
+]
+rocm-sdk = [
+    { index = "therock-gfx1151" },
+]
+triton = [
     { index = "therock-gfx1151" },
 ]
 
 [[tool.uv.index]]
 name = "therock-gfx1151"
 url = "https://rocm.nightlies.amd.com/v2/gfx1151/"
-explicit = true
