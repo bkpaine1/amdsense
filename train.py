@@ -452,7 +452,7 @@ class MuonAdamW(torch.optim.Optimizer):
 # ---------------------------------------------------------------------------
 
 # Model architecture
-ASPECT_RATIO = 32       # model_dim = depth * ASPECT_RATIO
+ASPECT_RATIO = 24       # model_dim = depth * ASPECT_RATIO
 HEAD_DIM = 64          # target head dimension for attention
 WINDOW_PATTERN = "SSSSSL" # sliding window pattern: L=full, S=half context
 
