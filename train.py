@@ -7,6 +7,8 @@ Usage: uv run train.py
 import os
 os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
 os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+os.environ["TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL"] = "1"
+os.environ.pop("PYTORCH_HIP_ALLOC_CONF", None)
 
 import gc
 import time
@@ -452,24 +454,24 @@ class MuonAdamW(torch.optim.Optimizer):
 # ---------------------------------------------------------------------------
 
 # Model architecture
-ASPECT_RATIO = 40       # model_dim = depth * ASPECT_RATIO
+ASPECT_RATIO = 44       # model_dim = depth * ASPECT_RATIO (320 at depth 6)
 HEAD_DIM = 64          # target head dimension for attention
 WINDOW_PATTERN = "SLSLSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
-TOTAL_BATCH_SIZE = 2**15 # ~524K tokens per optimizer step
+TOTAL_BATCH_SIZE = 2**15 # ~32K tokens per optimizer step
 EMBEDDING_LR = 0.8      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.008  # learning rate for lm_head (Adam)
-MATRIX_LR = 0.05        # learning rate for matrix parameters (Muon)
+MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.7         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.08      # cautious weight decay for Muon
-ADAM_BETAS = (0.75, 0.97) # Adam beta1, beta2
+ADAM_BETAS = (0.7, 0.97)  # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
-WARMDOWN_RATIO = 0.75    # fraction of time budget for LR warmdown
+WARMDOWN_RATIO = 0.7     # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.07     # final LR as fraction of initial
 
 # Model size
-DEPTH = 8               # number of transformer layers
+DEPTH = 6               # number of transformer layers
 DEVICE_BATCH_SIZE = 16  # per-device batch size (reduce if OOM)
 
 # ---------------------------------------------------------------------------
