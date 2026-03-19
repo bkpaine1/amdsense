@@ -454,11 +454,11 @@ class MuonAdamW(torch.optim.Optimizer):
 
 # Model architecture
 ASPECT_RATIO = 130      # model_dim = depth * ASPECT_RATIO
-HEAD_DIM = 64          # target head dimension for attention
+HEAD_DIM = 32          # target head dimension for attention (DIAG: bf16 small HEAD_DIM NaN test)
 WINDOW_PATTERN = "SSSSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
-TOTAL_BATCH_SIZE = 2**13 # ~8K tokens per optimizer step (DIAG: bf16 small batch NaN test)
+TOTAL_BATCH_SIZE = 2**15 # ~524K tokens per optimizer step
 EMBEDDING_LR = 1.0      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
@@ -471,7 +471,7 @@ FINAL_LR_FRAC = 0.10     # final LR as fraction of initial
 
 # Model size
 DEPTH = 2               # number of transformer layers
-DEVICE_BATCH_SIZE = 4   # per-device batch size (DIAG: reduced for 2^13 batch test)
+DEVICE_BATCH_SIZE = 16  # per-device batch size (reduce if OOM)
 
 # ---------------------------------------------------------------------------
 # Setup: tokenizer, model, optimizer, dataloader
