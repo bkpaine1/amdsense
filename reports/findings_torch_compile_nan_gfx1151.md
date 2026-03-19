@@ -25,9 +25,13 @@ torch.compile(adamw_step_fused) on gfx1151
     -> optimizer propagates NaN to all 18 parameters
     -> training dies
 
-Narrowed to: compiled ARITHMETIC (pow/sqrt/div) operating on bf16 data
+Narrowed to: compiled compute_denom = (exp_avg_sq / bias2).sqrt() + eps
+  - exp_avg_sq is bf16 tensor with ZERO NaN (DIAG 22: exp_avg_sq_nan=0)
+  - bias2 = 1 - beta2^step is a fp32 scalar (very close to 1.0)
+  - The compiled kernel for this specific expression produces NaN for 1 element
 NOT in: compiled lerp_() operations (Stage A clean through step 836 - DIAG 20)
 NOT in: compiled in-place bf16 stores (eager stores still NaN because input is NaN - DIAG 21)
+NOT in: compiled exp_avg / denom (update gets NaN from denom, not self-generated - DIAG 22)
 ```
 
 ## Evidence Table
@@ -50,6 +54,7 @@ NOT in: compiled in-place bf16 stores (eager stores still NaN because input is N
 | 19 | 57cc26e | Dump compiled Triton kernel code | - | - | - | bf16 kernel [1/1] has fp32→bf16 store conversions; fp32 kernel [1/0] has none |
 | **20** | **9b9c623** | **Split Adam: stage A (lerp) + stage B (update)** | **YES** | **step 649 (B)** | **nan** | **Stage B (bias correction+update) first NaN; Stage A (lerp) clean until cascade at 836** |
 | **21** | **56857be** | **Compiled pure arithmetic + eager bf16 stores** | **YES** | **step 622** | **nan** | **Compiled arithmetic returns NaN update tensor BEFORE eager store. Bug is in compiled pow/sqrt/div, NOT in compiled stores** |
+| **22** | **476b052** | **Split: compute_denom + compute_update** | **YES** | **step 633** | **nan** | **denom_nan=1 from CLEAN exp_avg_sq. Bug is in compiled `(exp_avg_sq/bias2).sqrt()+eps`** |
 
 ## Detailed Timeline (DIAG 9, compiled Adam, bf16)
 
@@ -219,6 +224,21 @@ Our investigation suggests that at least the Adam beta2 NaN (item 4) is caused b
   - Eager bf16 stores work correctly — they just faithfully store whatever value they receive
   - This refines the DIAG 19 hypothesis: the fp32→bf16 store conversion is NOT the root cause; the arithmetic code-gen is
 - **Cross-reference with DIAG 12**: DIAG 12 forced fp32 computation inside the full compiled kernel and still got NaN. This is consistent: the bug is in the compiled arithmetic code-gen, not in the dtype of the computation.
+
+### DIAG 22: compute_denom produces NaN from clean inputs (commit 476b052)
+- Split arithmetic into two compiled functions:
+  - `compute_denom(exp_avg_sq, step_t, beta2_t, eps_t)`: `bias2 = 1 - beta2_t ** step_t; denom = (exp_avg_sq / bias2).sqrt() + eps_t`
+  - `compute_update(exp_avg, denom, step_t, lr_t, beta1_t)`: `exp_avg / denom * (-step_size)`
+- NaN monitoring between both functions.
+- **DEFINITIVE RESULT**:
+  - Step 633: `denom_nan=1, exp_avg_nan=0, exp_avg_sq_nan=0` — compiled `compute_denom` produces 1 NaN from perfectly clean input
+  - `update_nan=1` — NaN propagates via `exp_avg / denom` (division by NaN)
+- **CONCLUSION**: The bug is localized to the compiled Triton kernel for `(exp_avg_sq / bias2).sqrt() + eps_t`:
+  - Input `exp_avg_sq` is a bf16 tensor with ZERO NaN values
+  - `bias2` is a fp32 scalar very close to 1.0 (e.g., `1 - 0.95^633 ≈ 1.0`)
+  - Yet the compiled kernel produces 1 NaN in the output
+  - The expression involves: bf16→fp32 load, fp32 scalar pow, fp32 scalar division, fp32 tensor division, fp32 sqrt, fp32 scalar addition
+  - One of these operations (most likely `sqrt` of a negative value from rounding, or `pow` producing subnormal/Inf) fails in the compiled AMDGPU ISA
 
 ## Recommended Actions for AMD/ROCm
 
