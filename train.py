@@ -336,7 +336,8 @@ def adamw_step_fused(p, grad, exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_
     step_size = lr_t / bias1
     p.add_(exp_avg / denom, alpha=-step_size)
 
-@torch.compile(dynamic=False, fullgraph=True)
+# DIAG 16: only disable Muon compile, keep Adam compiled
+#@torch.compile(dynamic=False, fullgraph=True)
 def muon_step_fused(stacked_grads, stacked_params, momentum_buffer, second_momentum_buffer,
                     momentum_t, lr_t, wd_t, beta2_t, ns_steps, red_dim):
     # Nesterov momentum
@@ -470,7 +471,7 @@ WARMDOWN_RATIO = 0.65    # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.10     # final LR as fraction of initial
 
 # Model size
-DEPTH = 2
+DEPTH = 12              # DIAG 16: isolate Muon vs Adam compile at depth=12
 DEVICE_BATCH_SIZE = 16  # per-device batch size (reduce if OOM)
 
 # ---------------------------------------------------------------------------
