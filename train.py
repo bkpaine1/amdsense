@@ -464,7 +464,7 @@ UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.7         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.16      # cautious weight decay for Muon
-ADAM_BETAS = (0.65, 0.95) # Adam beta1, beta2 — DIAG 19: beta2=0.95 to trigger compile bug
+ADAM_BETAS = (0.65, 0.97) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.65    # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.10     # final LR as fraction of initial
