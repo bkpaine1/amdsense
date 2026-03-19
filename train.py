@@ -373,7 +373,8 @@ def muon_step_fused(stacked_grads, stacked_params, momentum_buffer, second_momen
     # Cautious weight decay + parameter update
     lr = lr_t.to(g.dtype)
     wd = wd_t.to(g.dtype)
-    stacked_params.sub_(lr * g + lr * wd * stacked_params)
+    mask = (g * stacked_params) >= 0
+    stacked_params.sub_(lr * g + lr * wd * stacked_params * mask)
 
 
 class MuonAdamW(torch.optim.Optimizer):
