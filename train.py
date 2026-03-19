@@ -325,29 +325,16 @@ polar_express_coeffs = [
     (2.3465413258596377, -1.7097828382687081, 0.42323551169305323),
 ]
 
-# DIAG 20: Split Adam into two compiled kernels to isolate NaN source
-# Stage A: momentum updates (lerp) - compiled
-# Stage B: parameter update (bias correction + add) - compiled separately
-
 @torch.compile(dynamic=False, fullgraph=True)
-def adamw_stage_a(exp_avg, exp_avg_sq, grad, beta1_t, beta2_t):
-    """Momentum updates only - compiled"""
+def adamw_step_fused(p, grad, exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_t, eps_t, wd_t):
+    p.mul_(1 - lr_t * wd_t)
     exp_avg.lerp_(grad, 1 - beta1_t)
     exp_avg_sq.lerp_(grad.square(), 1 - beta2_t)
-
-@torch.compile(dynamic=False, fullgraph=True)
-def adamw_stage_b(p, exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_t, eps_t, wd_t):
-    """Weight decay + bias correction + parameter update - compiled"""
-    p.mul_(1 - lr_t * wd_t)
     bias1 = 1 - beta1_t ** step_t
     bias2 = 1 - beta2_t ** step_t
     denom = (exp_avg_sq / bias2).sqrt() + eps_t
     step_size = lr_t / bias1
     p.add_(exp_avg / denom, alpha=-step_size)
-
-def adamw_step_fused(p, grad, exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_t, eps_t, wd_t):
-    adamw_stage_a(exp_avg, exp_avg_sq, grad, beta1_t, beta2_t)
-    adamw_stage_b(p, exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_t, eps_t, wd_t)
 
 @torch.compile(dynamic=False, fullgraph=True)
 def muon_step_fused(stacked_grads, stacked_params, momentum_buffer, second_momentum_buffer,
@@ -407,7 +394,7 @@ class MuonAdamW(torch.optim.Optimizer):
         self._muon_beta2_t = torch.tensor(0.0, dtype=torch.float32, device="cpu")
 
     def _step_adamw(self, group):
-        for i, p in enumerate(group['params']):
+        for p in group['params']:
             if p.grad is None:
                 continue
             grad = p.grad
@@ -416,7 +403,6 @@ class MuonAdamW(torch.optim.Optimizer):
                 state['step'] = 0
                 state['exp_avg'] = torch.zeros_like(p)
                 state['exp_avg_sq'] = torch.zeros_like(p)
-                state['name'] = group.get('param_names', [f'param_{i}'])[min(i, len(group.get('param_names', []))-1)] if group.get('param_names') else f'param_{i}'
             state['step'] += 1
             self._adamw_step_t.fill_(state['step'])
             self._adamw_lr_t.fill_(group['lr'])
@@ -424,25 +410,9 @@ class MuonAdamW(torch.optim.Optimizer):
             self._adamw_beta2_t.fill_(group['betas'][1])
             self._adamw_eps_t.fill_(group['eps'])
             self._adamw_wd_t.fill_(group['weight_decay'])
-            # DIAG 20: Split into stages with NaN monitoring
-            # Stage A: momentum updates
-            adamw_stage_a(state['exp_avg'], state['exp_avg_sq'], grad,
-                         self._adamw_beta1_t, self._adamw_beta2_t)
-            # Check NaN after stage A
-            if state['step'] % 50 == 0 or state['step'] > 550:
-                nan_ea = torch.isnan(state['exp_avg']).sum().item()
-                nan_es = torch.isnan(state['exp_avg_sq']).sum().item()
-                if nan_ea > 0 or nan_es > 0:
-                    print(f"\n  DIAG20: NaN after STAGE A (lerp) at step {state['step']} param {p.shape}: exp_avg={nan_ea}, exp_avg_sq={nan_es}")
-            # Stage B: parameter update
-            adamw_stage_b(p, state['exp_avg'], state['exp_avg_sq'],
-                         self._adamw_step_t, self._adamw_lr_t, self._adamw_beta1_t,
-                         self._adamw_beta2_t, self._adamw_eps_t, self._adamw_wd_t)
-            # Check NaN after stage B
-            if state['step'] % 50 == 0 or state['step'] > 550:
-                nan_p = torch.isnan(p).sum().item()
-                if nan_p > 0:
-                    print(f"\n  DIAG20: NaN after STAGE B (update) at step {state['step']} param {p.shape}: p={nan_p}")
+            adamw_step_fused(p, grad, state['exp_avg'], state['exp_avg_sq'],
+                            self._adamw_step_t, self._adamw_lr_t, self._adamw_beta1_t,
+                            self._adamw_beta2_t, self._adamw_eps_t, self._adamw_wd_t)
 
     def _step_muon(self, group):
         params = group['params']
@@ -494,7 +464,7 @@ UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.7         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.16      # cautious weight decay for Muon
-ADAM_BETAS = (0.65, 0.95) # Adam beta1, beta2 — DIAG 20: beta2=0.95 to trigger compile bug
+ADAM_BETAS = (0.65, 0.97) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.65    # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.10     # final LR as fraction of initial

@@ -17,11 +17,16 @@ Through 17 systematic diagnostic experiments, we isolated a **torch.compile code
 
 ```
 torch.compile(adamw_step_fused) on gfx1151
-    -> compiled kernel produces incorrect values for ~1 embedding entry at step ~586-711
+    -> Triton generates bf16 kernel variant [1/1] with fp32->bf16 store conversions
+    -> Stage B (bias correction + p.add_) compiled kernel produces incorrect value for ~1 entry
+       (Stage A lerp operations compile correctly - DIAG 20)
     -> NaN silently grows in value_embeds table (1 -> 62 entries over ~250 steps)
     -> when batch contains affected token, forward pass cascades NaN to all gradients
     -> optimizer propagates NaN to all 18 parameters
     -> training dies
+
+Narrowed to: compiled kernel for p.mul_() + pow() + div() + sqrt() + add_() with bf16 stores
+NOT in: compiled lerp_() operations (Stage A clean through step 836)
 ```
 
 ## Evidence Table
@@ -41,6 +46,8 @@ torch.compile(adamw_step_fused) on gfx1151
 | **15** | **1139bfa** | **Small batch 2^13, optimizer compile OFF** | **NO** | **-** | **1.315537** | **3540 steps clean (vs NaN at 1783 in DIAG 1)** |
 | 16 | e56e466 | DEPTH=12, Adam compiled, Muon uncompiled | YES | step 6 | nan | Adam compile alone crashes depth=12 |
 | **16b** | **47c7ad1** | **DEPTH=12, Adam uncompiled, Muon compiled** | **NO** | **-** | **-** | **43 steps clean: Muon compile is SAFE** |
+| 19 | 57cc26e | Dump compiled Triton kernel code | - | - | - | bf16 kernel [1/1] has fp32→bf16 store conversions; fp32 kernel [1/0] has none |
+| **20** | **9b9c623** | **Split Adam: stage A (lerp) + stage B (update)** | **YES** | **step 649 (B)** | **nan** | **Stage B (bias correction+update) first NaN; Stage A (lerp) clean until cascade at 836** |
 
 ## Detailed Timeline (DIAG 9, compiled Adam, bf16)
 
@@ -170,6 +177,31 @@ Our investigation suggests that at least the Adam beta2 NaN (item 4) is caused b
 - NO NaN in 43 training steps (clean, identical to DIAG 14)
 - **Muon compile is SAFE** - only Adam compile causes the NaN
 - **DEFINITIVE: torch.compile on adamw_step_fused is the sole root cause for all NaN scenarios**
+
+### DIAG 19: Compiled Triton kernel code analysis (commit 57cc26e)
+- Dumped compiled kernel code using `TORCH_LOGS=output_code`
+- torch.compile generates **two kernel variants** for the same `adamw_step_fused` function:
+  - `[1/0]` fp32 variant: used for wte/lm_head (fp32 params). No type conversions anywhere.
+  - `[1/1]` bf16 variant: used for value_embeds (bf16 params). Has `tl.load(*bf16).to(tl.float32)` + implicit `tl.store(*bf16, fp32_value)` conversions.
+  - `[1/2]` fp32 scalar variant: used for resid/x0 lambdas (2 elements).
+- The bf16 kernel also has redundant `.to(tl.float32)` casts on values already in fp32.
+- **KEY FINDING**: NaN originates exclusively in bf16 parameters (value_embeds), never in fp32 parameters (wte, lm_head). The sole difference between the two kernel variants is the bf16 load/store conversion code.
+- This is consistent with DIAG 12 (fp32 math inside compiled kernel still NaN): DIAG 12 forced fp32 computation but the stores still went to bf16 tensors via the same implicit conversion path.
+- **Hypothesis**: Bug is in the Triton→AMDGPU ISA compiled fp32→bf16 store conversion instruction (`v_cvt_bf16_f32` or equivalent) on gfx1151.
+- Full kernel analysis: `reports/compiled_adam_kernel_analysis.md`
+
+### DIAG 20: Split Adam isolates Stage B as NaN source (commit 9b9c623)
+- Split `adamw_step_fused` into two separately compiled functions:
+  - **Stage A** (`adamw_stage_a`): `exp_avg.lerp_()` + `exp_avg_sq.lerp_()` — momentum updates
+  - **Stage B** (`adamw_stage_b`): `p.mul_(1-lr*wd)` + bias correction + `p.add_(exp_avg/denom)` — parameter update
+- NaN monitoring between stages at every step after step 550.
+- **DEFINITIVE RESULT**:
+  - Stage B first NaN at **step 649**: 1 NaN value in `p` (parameter tensor, shape 8192×320)
+  - Stage A first NaN at **step 836**: cascade from corrupted forward pass (grad already NaN)
+  - Between steps 649-836: NaN grows in `p` via Stage B, but `exp_avg`/`exp_avg_sq` remain clean through Stage A
+- **CONCLUSION**: The bug is specifically in the compiled kernel for bias correction + parameter update:
+  `p.mul_(1-lr*wd)`, `bias1 = 1-beta1^step`, `bias2 = 1-beta2^step`, `denom = (exp_avg_sq/bias2).sqrt()+eps`, `step_size = lr/bias1`, `p.add_(exp_avg/denom, alpha=-step_size)`
+- The lerp (momentum) operations compile correctly on gfx1151.
 
 ## Recommended Actions for AMD/ROCm
 
