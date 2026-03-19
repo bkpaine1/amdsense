@@ -476,7 +476,7 @@ WARMDOWN_RATIO = 0.65    # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.10     # final LR as fraction of initial
 
 # Model size
-DEPTH = 12  # DIAG 26: test clamp workaround at depth=12 (NaN at step 6 without clamp)
+DEPTH = 2
 DEVICE_BATCH_SIZE = 16  # per-device batch size (reduce if OOM)
 
 # ---------------------------------------------------------------------------

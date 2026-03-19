@@ -79,6 +79,7 @@ Isolation chain:
 | **24** | **18b4f53** | **Workaround: clamp exp_avg_sq above subnormal** | **NO** | **-** | **1.281410** | **beta2=0.95 + compiled Adam: ZERO NaN with clamp_min(1.1755e-38)** |
 | **24b** | **3ed8de0** | **Production: clamp + beta2=0.97** | **NO** | **-** | **1.280383** | **NEW BEST val_bpb! Compiled Adam with subnormal clamp = safe + optimal** |
 | 25 | - | Test 11 compiled math ops on subnormals | - | - | - | **ONLY sqrt broken**. rsqrt, reciprocal, log, exp, abs, neg, square, add, div, mul all correct on subnormals |
+| **26** | **e409d4d** | **Clamp workaround at DEPTH=12** | **NO** | **-** | **-** | **44 steps ZERO NaN (vs step 6 crash without clamp). Workaround comprehensive.** |
 
 ## Detailed Timeline (DIAG 9, compiled Adam, bf16)
 
