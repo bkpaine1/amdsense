@@ -21,3 +21,8 @@ dev/
 
 # Results file
 results.tsv
+
+# Temporary logs
+run.log
+*.log
+uv-resolution.txt
