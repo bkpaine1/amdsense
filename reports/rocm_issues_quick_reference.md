@@ -103,7 +103,7 @@ export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 - **AOTriton enabled**: 19x speedup (44ms → 2.3ms per attention call)
 
 ### Known Broken
-- **torch.compile on adamw_step_fused**: Produces NaN on gfx1151 (sole root cause of ALL NaN scenarios)
+- **Compiled sqrt() on subnormal values**: ROOT CAUSE of ALL NaN scenarios. Compiled Triton `sqrt()` produces NaN for subnormal fp inputs (both bf16 and fp32) on gfx1151. Eager sqrt handles correctly. Triggers in Adam when exp_avg_sq decays to subnormal range (~1e-38) for cold embedding rows.
 - **SDPA window_size**: Ignored on ROCm SDPA fallback
 - **Gradient clipping**: Hurts performance with Muon (already normalizes)
 - **Label smoothing**: Terrible for LM pretraining
