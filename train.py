@@ -98,7 +98,7 @@ class CausalSelfAttention(nn.Module):
 
         cos, sin = cos_sin
         q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)
-        # QK norm removed for experiment
+        q, k = norm(q), norm(k)
 
         if USE_FA3:
             # FA3: expects (B, T, H, D), returns (B, T, H, D)
