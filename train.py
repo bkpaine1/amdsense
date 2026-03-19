@@ -601,6 +601,16 @@ while True:
 
     train_loss_f = train_loss.item()
 
+    # DIAG 13: Lightweight NaN check on baseline config (beta2=0.97) every 50 steps
+    import math
+    if step % 50 == 0 or math.isnan(train_loss_f):
+        for ename, ep in [('ve1', model._orig_mod.value_embeds[str(1)].weight if '1' in model._orig_mod.value_embeds else None),
+                          ('wte', model._orig_mod.transformer.wte.weight),
+                          ('lm_head', model._orig_mod.lm_head.weight)]:
+            if ep is not None and torch.isnan(ep).any():
+                nc = torch.isnan(ep).sum().item()
+                print(f"\n  [step {step}] NaN in {ename}: {nc}/{ep.numel()}")
+
     torch.cuda.synchronize()
     t1 = time.time()
     dt = t1 - t0
