@@ -401,8 +401,8 @@ class MuonAdamW(torch.optim.Optimizer):
             state = self.state[p]
             if not state:
                 state['step'] = 0
-                state['exp_avg'] = torch.zeros(p.shape, dtype=torch.float32, device=p.device)
-                state['exp_avg_sq'] = torch.zeros(p.shape, dtype=torch.float32, device=p.device)
+                state['exp_avg'] = torch.zeros_like(p)
+                state['exp_avg_sq'] = torch.zeros_like(p)
             state['step'] += 1
             self._adamw_step_t.fill_(state['step'])
             self._adamw_lr_t.fill_(group['lr'])
@@ -410,13 +410,9 @@ class MuonAdamW(torch.optim.Optimizer):
             self._adamw_beta2_t.fill_(group['betas'][1])
             self._adamw_eps_t.fill_(group['eps'])
             self._adamw_wd_t.fill_(group['weight_decay'])
-            # DIAG: fp32 optimizer states - cast p and grad to fp32 for accumulation
-            p_fp32 = p.float()
-            grad_fp32 = grad.float()
-            adamw_step_fused(p_fp32, grad_fp32, state['exp_avg'], state['exp_avg_sq'],
+            adamw_step_fused(p, grad, state['exp_avg'], state['exp_avg_sq'],
                             self._adamw_step_t, self._adamw_lr_t, self._adamw_beta1_t,
                             self._adamw_beta2_t, self._adamw_eps_t, self._adamw_wd_t)
-            p.copy_(p_fp32)
 
     def _step_muon(self, group):
         params = group['params']
@@ -605,10 +601,34 @@ while True:
 
     train_loss_f = train_loss.item()
 
-    # Fast fail: abort if loss is exploding
-    if train_loss_f > 100:
-        print("FAIL")
-        exit(1)
+    # DIAG: NaN detection - check which parameters went NaN first
+    import math
+    if math.isnan(train_loss_f) or train_loss_f > 100:
+        print(f"\n=== NaN/EXPLODE DETECTED at step {step} (loss={train_loss_f}) ===")
+        # Check each parameter for NaN
+        named_params = list(model.named_parameters())
+        nan_params = []
+        for name, p in named_params:
+            if torch.isnan(p).any():
+                nan_count = torch.isnan(p).sum().item()
+                nan_frac = nan_count / p.numel()
+                nan_params.append((name, nan_count, nan_frac, p.shape))
+        if nan_params:
+            print(f"Parameters with NaN ({len(nan_params)}/{len(named_params)}):")
+            for name, cnt, frac, shape in sorted(nan_params, key=lambda x: -x[2]):
+                print(f"  {name}: {cnt}/{shape} ({frac*100:.1f}% NaN)")
+        else:
+            print("No NaN in parameters - NaN may be in activations/gradients only")
+        # Check gradients
+        nan_grads = []
+        for name, p in named_params:
+            if p.grad is not None and torch.isnan(p.grad).any():
+                nan_grads.append(name)
+        if nan_grads:
+            print(f"Gradients with NaN: {nan_grads[:10]}")
+        if train_loss_f > 100 and not math.isnan(train_loss_f):
+            print("FAIL")
+            exit(1)
 
     torch.cuda.synchronize()
     t1 = time.time()
