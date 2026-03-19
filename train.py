@@ -128,7 +128,7 @@ class MLP(nn.Module):
 
     def forward(self, x):
         x = self.c_fc(x)
-        x = F.gelu(x)
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x
 
