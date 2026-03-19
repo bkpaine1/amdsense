@@ -598,55 +598,42 @@ while True:
             group["weight_decay"] = muon_weight_decay
     train_loss_f = train_loss.item()
 
-    # DIAG 8: Pre-optimizer gradient NaN check - isolate NaN source
+    # DIAG 9: Track NaN onset in embeddings every step
     import math
-    if step >= 830:  # Check near known failure point (step 835)
-        named_params = list(model.named_parameters())
-        pre_nan_grads = []
-        pre_nan_params = []
-        grad_norms = {}
-        for name, p in named_params:
-            if p.grad is not None:
-                has_nan = torch.isnan(p.grad).any().item()
-                has_inf = torch.isinf(p.grad).any().item()
-                gnorm = p.grad.float().norm().item()
-                grad_norms[name] = gnorm
-                if has_nan or has_inf:
-                    pre_nan_grads.append((name, has_nan, has_inf, gnorm))
-            if torch.isnan(p).any():
-                pre_nan_params.append(name)
-        if pre_nan_grads or pre_nan_params:
-            print(f"\n=== PRE-OPTIMIZER CHECK step {step} (loss={train_loss_f}) ===")
-            if pre_nan_grads:
-                print(f"GRADIENTS with NaN/Inf BEFORE optimizer step:")
-                for name, has_nan, has_inf, gnorm in pre_nan_grads:
-                    print(f"  {name}: nan={has_nan} inf={has_inf} norm={gnorm}")
-            if pre_nan_params:
-                print(f"PARAMETERS with NaN BEFORE optimizer step: {pre_nan_params}")
-            print(f"Top gradient norms:")
-            for name, gnorm in sorted(grad_norms.items(), key=lambda x: -x[1])[:10]:
-                print(f"  {name}: {gnorm:.6f}")
-        elif step % 1 == 0:  # Print every step near failure point
-            top_grads = sorted(grad_norms.items(), key=lambda x: -x[1])[:5]
-            print(f"\n  [step {step}] loss={train_loss_f:.4f} top grads: {[(n.split('.')[-2]+'.'+n.split('.')[-1], f'{v:.4f}') for n,v in top_grads]}")
+    _embed_params = [
+        ('value_embeds.1', model._orig_mod.value_embeds[str(1)].weight if '1' in model._orig_mod.value_embeds else None),
+        ('wte', model._orig_mod.transformer.wte.weight),
+        ('lm_head', model._orig_mod.lm_head.weight),
+    ]
+    for ename, ep in _embed_params:
+        if ep is not None and torch.isnan(ep).any():
+            nan_count = torch.isnan(ep).sum().item()
+            nan_frac = nan_count / ep.numel()
+            # Find which rows have NaN
+            nan_rows = torch.isnan(ep).any(dim=1)
+            nan_row_count = nan_rows.sum().item()
+            # Get max absolute value of non-NaN entries
+            finite_mask = torch.isfinite(ep)
+            max_val = ep[finite_mask].abs().max().item() if finite_mask.any() else 0
+            print(f"\n  [step {step}] PRE-OPT NaN in {ename}: {nan_count}/{ep.numel()} ({nan_frac*100:.2f}%), {nan_row_count} rows, max_finite={max_val:.4f}")
 
     optimizer.step()
+
+    # Post-optimizer NaN check on embeddings
+    for ename, ep in _embed_params:
+        if ep is not None and torch.isnan(ep).any():
+            nan_count = torch.isnan(ep).sum().item()
+            nan_frac = nan_count / ep.numel()
+            nan_rows = torch.isnan(ep).any(dim=1)
+            nan_row_count = nan_rows.sum().item()
+            finite_mask = torch.isfinite(ep)
+            max_val = ep[finite_mask].abs().max().item() if finite_mask.any() else 0
+            print(f"\n  [step {step}] POST-OPT NaN in {ename}: {nan_count}/{ep.numel()} ({nan_frac*100:.2f}%), {nan_row_count} rows, max_finite={max_val:.4f}")
+
     model.zero_grad(set_to_none=True)
 
-    # DIAG 8: Post-optimizer NaN check
     if math.isnan(train_loss_f) or train_loss_f > 100:
-        print(f"\n=== NaN/EXPLODE DETECTED at step {step} (loss={train_loss_f}) ===")
-        named_params = list(model.named_parameters())
-        nan_params = []
-        for name, p in named_params:
-            if torch.isnan(p).any():
-                nan_count = torch.isnan(p).sum().item()
-                nan_frac = nan_count / p.numel()
-                nan_params.append((name, nan_count, nan_frac, p.shape))
-        if nan_params:
-            print(f"POST-OPTIMIZER Parameters with NaN ({len(nan_params)}/{len(named_params)}):")
-            for name, cnt, frac, shape in sorted(nan_params, key=lambda x: -x[2]):
-                print(f"  {name}: {cnt}/{shape} ({frac*100:.1f}% NaN)")
+        print(f"\n=== NaN CRASH at step {step} ===")
         if train_loss_f > 100 and not math.isnan(train_loss_f):
             print("FAIL")
             exit(1)
