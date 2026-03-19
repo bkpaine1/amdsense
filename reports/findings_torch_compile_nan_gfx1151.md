@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-Through 12 systematic diagnostic experiments, we isolated a **torch.compile code generation bug on gfx1151** that produces NaN values in compiled Adam optimizer kernels. The bug is NOT a bf16 precision issue - it persists even when all computation inside the compiled function is done in fp32. Disabling `torch.compile` on the Adam step function completely eliminates the NaN while producing identical training quality.
+Through 14 systematic diagnostic experiments, we isolated a **torch.compile code generation bug on gfx1151** that produces NaN values in compiled optimizer kernels (both Adam and Muon). The bug is NOT a bf16 precision issue - it persists even when all computation inside the compiled function is done in fp32. Disabling `torch.compile` on optimizer step functions completely eliminates the NaN while producing identical training quality. The bug affects both shallow models (depth=2, NaN at step ~586 with Adam beta2=0.95) and deep models (depth=12, NaN at step 6 with compiled optimizers).
 
 ## Root Cause Chain
 
@@ -33,6 +33,8 @@ torch.compile(adamw_step_fused) on gfx1151
 | 10 | 59dbbd7 | eps=1e-4 | YES | step 682 | nan | Larger eps delays but doesn't fix |
 | **11** | **53bd85e** | **torch.compile OFF on Adam** | **NO** | **-** | **1.281545** | **ZERO NaN across 1062 steps** |
 | 12 | 0ea95be | Compiled Adam with fp32 math | YES | step 711 | nan | NaN even with fp32 inside compile |
+| 13 | 1bb1db2 | Baseline beta2=0.97 NaN monitoring | NO | - | 1.280839 | Compile bug needs beta2=0.95 to trigger at depth=2 |
+| **14** | **26e39fe** | **DEPTH=12, optimizer compile OFF** | **NO** | **-** | **-** | **42 steps clean (vs step 6 crash in DIAG 5)** |
 
 ## Detailed Timeline (DIAG 9, compiled Adam, bf16)
 
@@ -136,10 +138,18 @@ Our investigation suggests that at least the Adam beta2 NaN (item 4) is caused b
 - NO NaN, only quality loss
 - LR cliff from original report is depth-dependent
 
-### DIAG 5: DEPTH=12
+### DIAG 5: DEPTH=12 (compiled optimizers)
 - NaN at step 6/45 - catastrophic and immediate
 - Different mechanism from Adam compile NaN (too fast, affects Muon directly)
-- Likely genuine bf16 overflow in deep network forward/backward pass
+- Originally attributed to genuine bf16 overflow in deep network forward/backward pass
+
+### DIAG 14: DEPTH=12 (optimizer compile DISABLED, model compile active)
+- NO NaN in 42 training steps (vs NaN at step 6 in DIAG 5 with compiled optimizers)
+- Loss curve healthy: 9.01 -> 5.74, steadily decreasing
+- 596M params, only 42 steps in 5min budget (9.5s/step), eval killed (too slow)
+- **KEY FINDING**: Depth=12 NaN is ALSO caused by torch.compile on optimizer steps
+- The "deep network bf16 overflow" hypothesis from DIAG 5 was WRONG - it's the same compiler bug
+- This means torch.compile code generation bug affects BOTH Adam AND Muon compiled steps on gfx1151
 
 ## Recommended Actions for AMD/ROCm
 

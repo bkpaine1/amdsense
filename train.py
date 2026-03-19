@@ -325,8 +325,7 @@ polar_express_coeffs = [
     (2.3465413258596377, -1.7097828382687081, 0.42323551169305323),
 ]
 
-# DIAG 14: disable compile on both optimizer steps for depth=12 test
-#@torch.compile(dynamic=False, fullgraph=True)
+@torch.compile(dynamic=False, fullgraph=True)
 def adamw_step_fused(p, grad, exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_t, eps_t, wd_t):
     p.mul_(1 - lr_t * wd_t)
     exp_avg.lerp_(grad, 1 - beta1_t)
@@ -337,7 +336,7 @@ def adamw_step_fused(p, grad, exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_
     step_size = lr_t / bias1
     p.add_(exp_avg / denom, alpha=-step_size)
 
-#@torch.compile(dynamic=False, fullgraph=True)
+@torch.compile(dynamic=False, fullgraph=True)
 def muon_step_fused(stacked_grads, stacked_params, momentum_buffer, second_momentum_buffer,
                     momentum_t, lr_t, wd_t, beta2_t, ns_steps, red_dim):
     # Nesterov momentum
@@ -471,7 +470,7 @@ WARMDOWN_RATIO = 0.65    # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.10     # final LR as fraction of initial
 
 # Model size
-DEPTH = 12              # DIAG 14: test if depth=12 NaN is also torch.compile
+DEPTH = 2
 DEVICE_BATCH_SIZE = 16  # per-device batch size (reduce if OOM)
 
 # ---------------------------------------------------------------------------
