@@ -401,8 +401,8 @@ class MuonAdamW(torch.optim.Optimizer):
             state = self.state[p]
             if not state:
                 state['step'] = 0
-                state['exp_avg'] = torch.zeros_like(p)
-                state['exp_avg_sq'] = torch.zeros_like(p)
+                state['exp_avg'] = torch.zeros(p.shape, dtype=torch.float32, device=p.device)
+                state['exp_avg_sq'] = torch.zeros(p.shape, dtype=torch.float32, device=p.device)
             state['step'] += 1
             self._adamw_step_t.fill_(state['step'])
             self._adamw_lr_t.fill_(group['lr'])
@@ -410,9 +410,13 @@ class MuonAdamW(torch.optim.Optimizer):
             self._adamw_beta2_t.fill_(group['betas'][1])
             self._adamw_eps_t.fill_(group['eps'])
             self._adamw_wd_t.fill_(group['weight_decay'])
-            adamw_step_fused(p, grad, state['exp_avg'], state['exp_avg_sq'],
+            # DIAG: fp32 optimizer states - cast p and grad to fp32 for accumulation
+            p_fp32 = p.float()
+            grad_fp32 = grad.float()
+            adamw_step_fused(p_fp32, grad_fp32, state['exp_avg'], state['exp_avg_sq'],
                             self._adamw_step_t, self._adamw_lr_t, self._adamw_beta1_t,
                             self._adamw_beta2_t, self._adamw_eps_t, self._adamw_wd_t)
+            p.copy_(p_fp32)
 
     def _step_muon(self, group):
         params = group['params']
@@ -464,13 +468,13 @@ UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.7         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.16      # cautious weight decay for Muon
-ADAM_BETAS = (0.65, 0.97) # Adam beta1, beta2
+ADAM_BETAS = (0.65, 0.95) # Adam beta1, beta2 (DIAG: beta2=0.95 with fp32 optimizer states)
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.65    # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.10     # final LR as fraction of initial
 
 # Model size
-DEPTH = 12              # number of transformer layers (DIAG: deep network stability test)
+DEPTH = 2               # number of transformer layers
 DEVICE_BATCH_SIZE = 16  # per-device batch size (reduce if OOM)
 
 # ---------------------------------------------------------------------------
