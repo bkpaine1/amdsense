@@ -596,16 +596,46 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
+    train_loss_f = train_loss.item()
+
+    # DIAG 8: Pre-optimizer gradient NaN check - isolate NaN source
+    import math
+    if step >= 830:  # Check near known failure point (step 835)
+        named_params = list(model.named_parameters())
+        pre_nan_grads = []
+        pre_nan_params = []
+        grad_norms = {}
+        for name, p in named_params:
+            if p.grad is not None:
+                has_nan = torch.isnan(p.grad).any().item()
+                has_inf = torch.isinf(p.grad).any().item()
+                gnorm = p.grad.float().norm().item()
+                grad_norms[name] = gnorm
+                if has_nan or has_inf:
+                    pre_nan_grads.append((name, has_nan, has_inf, gnorm))
+            if torch.isnan(p).any():
+                pre_nan_params.append(name)
+        if pre_nan_grads or pre_nan_params:
+            print(f"\n=== PRE-OPTIMIZER CHECK step {step} (loss={train_loss_f}) ===")
+            if pre_nan_grads:
+                print(f"GRADIENTS with NaN/Inf BEFORE optimizer step:")
+                for name, has_nan, has_inf, gnorm in pre_nan_grads:
+                    print(f"  {name}: nan={has_nan} inf={has_inf} norm={gnorm}")
+            if pre_nan_params:
+                print(f"PARAMETERS with NaN BEFORE optimizer step: {pre_nan_params}")
+            print(f"Top gradient norms:")
+            for name, gnorm in sorted(grad_norms.items(), key=lambda x: -x[1])[:10]:
+                print(f"  {name}: {gnorm:.6f}")
+        elif step % 1 == 0:  # Print every step near failure point
+            top_grads = sorted(grad_norms.items(), key=lambda x: -x[1])[:5]
+            print(f"\n  [step {step}] loss={train_loss_f:.4f} top grads: {[(n.split('.')[-2]+'.'+n.split('.')[-1], f'{v:.4f}') for n,v in top_grads]}")
+
     optimizer.step()
     model.zero_grad(set_to_none=True)
 
-    train_loss_f = train_loss.item()
-
-    # DIAG: NaN detection - check which parameters went NaN first
-    import math
+    # DIAG 8: Post-optimizer NaN check
     if math.isnan(train_loss_f) or train_loss_f > 100:
         print(f"\n=== NaN/EXPLODE DETECTED at step {step} (loss={train_loss_f}) ===")
-        # Check each parameter for NaN
         named_params = list(model.named_parameters())
         nan_params = []
         for name, p in named_params:
@@ -614,18 +644,9 @@ while True:
                 nan_frac = nan_count / p.numel()
                 nan_params.append((name, nan_count, nan_frac, p.shape))
         if nan_params:
-            print(f"Parameters with NaN ({len(nan_params)}/{len(named_params)}):")
+            print(f"POST-OPTIMIZER Parameters with NaN ({len(nan_params)}/{len(named_params)}):")
             for name, cnt, frac, shape in sorted(nan_params, key=lambda x: -x[2]):
                 print(f"  {name}: {cnt}/{shape} ({frac*100:.1f}% NaN)")
-        else:
-            print("No NaN in parameters - NaN may be in activations/gradients only")
-        # Check gradients
-        nan_grads = []
-        for name, p in named_params:
-            if p.grad is not None and torch.isnan(p.grad).any():
-                nan_grads.append(name)
-        if nan_grads:
-            print(f"Gradients with NaN: {nan_grads[:10]}")
         if train_loss_f > 100 and not math.isnan(train_loss_f):
             print("FAIL")
             exit(1)
