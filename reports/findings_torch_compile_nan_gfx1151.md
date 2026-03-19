@@ -78,6 +78,7 @@ Isolation chain:
 | **23** | **edb2ccf** | **Compiled vs eager + value dump + minimal reproducer** | **YES** | **step 681** | **nan** | **ROOT CAUSE: compiled sqrt(subnormal)=NaN. exp_avg_sq=1.15e-38 (subnormal) triggers it. Standalone reproducer confirms.** |
 | **24** | **18b4f53** | **Workaround: clamp exp_avg_sq above subnormal** | **NO** | **-** | **1.281410** | **beta2=0.95 + compiled Adam: ZERO NaN with clamp_min(1.1755e-38)** |
 | **24b** | **3ed8de0** | **Production: clamp + beta2=0.97** | **NO** | **-** | **1.280383** | **NEW BEST val_bpb! Compiled Adam with subnormal clamp = safe + optimal** |
+| 25 | - | Test 11 compiled math ops on subnormals | - | - | - | **ONLY sqrt broken**. rsqrt, reciprocal, log, exp, abs, neg, square, add, div, mul all correct on subnormals |
 
 ## Detailed Timeline (DIAG 9, compiled Adam, bf16)
 
@@ -311,10 +312,36 @@ exp_avg_sq[s] ≈ exp_avg_sq[last_seen] × beta2^(s - last_seen)
 
 With beta2=0.95, values decay to subnormal (~1e-38) after ~880 steps of zero gradient. With beta2=0.97, this takes ~1270 steps. In our 5-minute budget (~1067 steps), beta2=0.95 reaches subnormal within budget, beta2=0.97 barely doesn't.
 
+### DIAG 24/24b: Workaround confirmed — clamp prevents NaN (commits 18b4f53, 3ed8de0)
+- Added `exp_avg_sq.clamp_min(1.1755e-38)` before `sqrt()` in compiled Adam.
+- **DIAG 24** (beta2=0.95): ZERO NaN across 1067 steps, val_bpb=1.281410 (was NaN at ~step 620)
+- **DIAG 24b** (beta2=0.97): ZERO NaN, val_bpb=1.280383 — new best (previous: 1.280888)
+- The clamp only affects subnormal values (~1e-38) which are negligible vs eps=1e-10 in the Adam denominator, so no quality impact.
+
+### DIAG 25: Only sqrt is broken — 10 other ops handle subnormals correctly
+- Tested 11 compiled math operations on subnormal values (bf16 and fp32):
+
+| Operation | Compiled on subnormal | Status |
+|-----------|-----------------------|--------|
+| `sqrt` | NaN (100% of elements) | **BUG** |
+| `rsqrt` | Correct | ok |
+| `reciprocal` | Correct | ok |
+| `log` | Correct | ok |
+| `exp` | Correct | ok |
+| `abs` | Correct | ok |
+| `neg` | Correct | ok |
+| `square` | Correct | ok |
+| `add` | Correct | ok |
+| `div` | Correct | ok |
+| `mul` | Correct | ok |
+
+- **Key insight**: `rsqrt` (1/sqrt) works correctly on subnormals but `sqrt` fails. These likely use different ISA instructions on gfx1151 (`v_rsq_f32` vs `v_sqrt_f32`).
+- This strongly suggests the bug is in the **`v_sqrt_f32`** (or `tl.sqrt_rn`) instruction specifically on gfx1151, not in a general subnormal handling issue.
+
 ## Recommended Actions for AMD/ROCm
 
-1. **Fix compiled sqrt on gfx1151**: The compiled Triton kernel's sqrt instruction produces NaN for subnormal inputs. This affects both bf16 and fp32 tensors. Test with `tl.sqrt_rn()` vs `tl.sqrt()` and verify the AMDGPU ISA instruction emitted.
-2. **Check FTZ/DAZ mode flags**: Compiled Triton kernels may set Flush-To-Zero or Denormals-Are-Zero mode flags differently from eager PyTorch. If FTZ is enabled, subnormals should flush to +0 (which sqrt(+0)=+0, valid), not produce NaN.
-3. **Test other compiled math ops**: If sqrt fails on subnormals, verify that `rsqrt`, `log`, `exp`, and other math ops handle subnormals correctly in compiled kernels.
-4. **Document torch.compile limitations**: Until fixed, gfx1151 users should clamp optimizer states away from subnormal range, or avoid compiling optimizer steps.
-5. **Add subnormal tests to CI**: Any compiled kernel test suite should include subnormal inputs for math functions.
+1. **Fix `v_sqrt_f32` on gfx1151**: The compiled Triton kernel's sqrt instruction produces NaN for subnormal inputs. This affects both bf16 and fp32 tensors. `rsqrt` works correctly, suggesting the issue is specific to `v_sqrt_f32` (or whichever ISA instruction `tl.sqrt_rn()` compiles to).
+2. **Check FTZ/DAZ mode flags**: Compiled Triton kernels may set Flush-To-Zero or Denormals-Are-Zero mode flags differently from eager PyTorch. If FTZ is enabled, subnormals should flush to +0 (which sqrt(+0)=+0, valid), not produce NaN. The fact that `rsqrt` handles subnormals correctly while `sqrt` doesn't suggests different FTZ handling per instruction.
+3. **Add subnormal tests to CI**: Any compiled kernel test suite should include subnormal inputs for math functions, especially sqrt.
+4. **Document torch.compile limitations**: Until fixed, gfx1151 users should clamp inputs away from subnormal range before compiled sqrt, or avoid compiling optimizer steps.
+5. **Consider Triton-level workaround**: Triton could use `rsqrt(x) * x` instead of `sqrt(x)` as a temporary fix for gfx1151, since rsqrt handles subnormals correctly.
