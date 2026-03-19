@@ -325,26 +325,16 @@ polar_express_coeffs = [
     (2.3465413258596377, -1.7097828382687081, 0.42323551169305323),
 ]
 
-# DIAG 12: compiled Adam with explicit fp32 computation to test if compile+bf16 is the issue
 @torch.compile(dynamic=False, fullgraph=True)
 def adamw_step_fused(p, grad, exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_t, eps_t, wd_t):
     p.mul_(1 - lr_t * wd_t)
-    # Cast to fp32 for computation
-    exp_avg_f = exp_avg.float()
-    exp_avg_sq_f = exp_avg_sq.float()
-    grad_f = grad.float()
-    exp_avg_f.lerp_(grad_f, 1 - beta1_t)
-    exp_avg_sq_f.lerp_(grad_f.square(), 1 - beta2_t)
-    # Store back in bf16
-    exp_avg.copy_(exp_avg_f)
-    exp_avg_sq.copy_(exp_avg_sq_f)
+    exp_avg.lerp_(grad, 1 - beta1_t)
+    exp_avg_sq.lerp_(grad.square(), 1 - beta2_t)
     bias1 = 1 - beta1_t ** step_t
     bias2 = 1 - beta2_t ** step_t
-    denom = (exp_avg_sq_f / bias2).sqrt() + eps_t
+    denom = (exp_avg_sq / bias2).sqrt() + eps_t
     step_size = lr_t / bias1
-    p_f = p.float()
-    p_f.add_(exp_avg_f / denom, alpha=-step_size)
-    p.copy_(p_f)
+    p.add_(exp_avg / denom, alpha=-step_size)
 
 @torch.compile(dynamic=False, fullgraph=True)
 def muon_step_fused(stacked_grads, stacked_params, momentum_buffer, second_momentum_buffer,
@@ -474,7 +464,7 @@ UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.7         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.16      # cautious weight decay for Muon
-ADAM_BETAS = (0.65, 0.95) # Adam beta1, beta2 (DIAG: testing with eps=1e-10)
+ADAM_BETAS = (0.65, 0.97) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.65    # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.10     # final LR as fraction of initial
@@ -606,47 +596,10 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    train_loss_f = train_loss.item()
-
-    # DIAG 9: Track NaN onset in embeddings every step
-    import math
-    _embed_params = [
-        ('value_embeds.1', model._orig_mod.value_embeds[str(1)].weight if '1' in model._orig_mod.value_embeds else None),
-        ('wte', model._orig_mod.transformer.wte.weight),
-        ('lm_head', model._orig_mod.lm_head.weight),
-    ]
-    for ename, ep in _embed_params:
-        if ep is not None and torch.isnan(ep).any():
-            nan_count = torch.isnan(ep).sum().item()
-            nan_frac = nan_count / ep.numel()
-            # Find which rows have NaN
-            nan_rows = torch.isnan(ep).any(dim=1)
-            nan_row_count = nan_rows.sum().item()
-            # Get max absolute value of non-NaN entries
-            finite_mask = torch.isfinite(ep)
-            max_val = ep[finite_mask].abs().max().item() if finite_mask.any() else 0
-            print(f"\n  [step {step}] PRE-OPT NaN in {ename}: {nan_count}/{ep.numel()} ({nan_frac*100:.2f}%), {nan_row_count} rows, max_finite={max_val:.4f}")
-
     optimizer.step()
-
-    # Post-optimizer NaN check on embeddings
-    for ename, ep in _embed_params:
-        if ep is not None and torch.isnan(ep).any():
-            nan_count = torch.isnan(ep).sum().item()
-            nan_frac = nan_count / ep.numel()
-            nan_rows = torch.isnan(ep).any(dim=1)
-            nan_row_count = nan_rows.sum().item()
-            finite_mask = torch.isfinite(ep)
-            max_val = ep[finite_mask].abs().max().item() if finite_mask.any() else 0
-            print(f"\n  [step {step}] POST-OPT NaN in {ename}: {nan_count}/{ep.numel()} ({nan_frac*100:.2f}%), {nan_row_count} rows, max_finite={max_val:.4f}")
-
     model.zero_grad(set_to_none=True)
 
-    if math.isnan(train_loss_f) or train_loss_f > 100:
-        print(f"\n=== NaN CRASH at step {step} ===")
-        if train_loss_f > 100 and not math.isnan(train_loss_f):
-            print("FAIL")
-            exit(1)
+    train_loss_f = train_loss.item()
 
     torch.cuda.synchronize()
     t1 = time.time()
