@@ -325,17 +325,26 @@ polar_express_coeffs = [
     (2.3465413258596377, -1.7097828382687081, 0.42323551169305323),
 ]
 
-# DIAG 11: torch.compile DISABLED to test if compiler introduces bf16 NaN on gfx1151
-#@torch.compile(dynamic=False, fullgraph=True)
+# DIAG 12: compiled Adam with explicit fp32 computation to test if compile+bf16 is the issue
+@torch.compile(dynamic=False, fullgraph=True)
 def adamw_step_fused(p, grad, exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_t, eps_t, wd_t):
     p.mul_(1 - lr_t * wd_t)
-    exp_avg.lerp_(grad, 1 - beta1_t)
-    exp_avg_sq.lerp_(grad.square(), 1 - beta2_t)
+    # Cast to fp32 for computation
+    exp_avg_f = exp_avg.float()
+    exp_avg_sq_f = exp_avg_sq.float()
+    grad_f = grad.float()
+    exp_avg_f.lerp_(grad_f, 1 - beta1_t)
+    exp_avg_sq_f.lerp_(grad_f.square(), 1 - beta2_t)
+    # Store back in bf16
+    exp_avg.copy_(exp_avg_f)
+    exp_avg_sq.copy_(exp_avg_sq_f)
     bias1 = 1 - beta1_t ** step_t
     bias2 = 1 - beta2_t ** step_t
-    denom = (exp_avg_sq / bias2).sqrt() + eps_t
+    denom = (exp_avg_sq_f / bias2).sqrt() + eps_t
     step_size = lr_t / bias1
-    p.add_(exp_avg / denom, alpha=-step_size)
+    p_f = p.float()
+    p_f.add_(exp_avg_f / denom, alpha=-step_size)
+    p.copy_(p_f)
 
 @torch.compile(dynamic=False, fullgraph=True)
 def muon_step_fused(stacked_grads, stacked_params, momentum_buffer, second_momentum_buffer,
