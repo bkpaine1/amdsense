@@ -325,30 +325,21 @@ polar_express_coeffs = [
     (2.3465413258596377, -1.7097828382687081, 0.42323551169305323),
 ]
 
-# DIAG 23: compiled vs eager comparison of compute_denom
-# Run the SAME expression both compiled and eager, compare results
+# DIAG 24: Workaround - clamp exp_avg_sq above subnormal range before sqrt
+# Root cause (DIAG 23): compiled sqrt(subnormal) = NaN on gfx1151
+# Fix: clamp exp_avg_sq to bf16 min normal before division+sqrt
 
 @torch.compile(dynamic=False, fullgraph=True)
-def adamw_stage_a(exp_avg, exp_avg_sq, grad, beta1_t, beta2_t):
-    """Momentum updates only - compiled (known clean from DIAG 20)"""
+def adamw_step_fused(p, grad, exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_t, eps_t, wd_t):
+    p.mul_(1 - lr_t * wd_t)
     exp_avg.lerp_(grad, 1 - beta1_t)
     exp_avg_sq.lerp_(grad.square(), 1 - beta2_t)
-
-@torch.compile(dynamic=False, fullgraph=True)
-def compute_denom_compiled(exp_avg_sq, step_t, beta2_t, eps_t):
-    """Compiled version of denom computation"""
-    bias2 = 1 - beta2_t ** step_t
-    denom = (exp_avg_sq / bias2).sqrt() + eps_t
-    return denom
-
-def adamw_step_fused(p, grad, exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_t, eps_t, wd_t):
-    adamw_stage_a(exp_avg, exp_avg_sq, grad, beta1_t, beta2_t)
-    # Compiled denom
-    denom = compute_denom_compiled(exp_avg_sq, step_t, beta2_t, eps_t)
-    # Eager update + stores (known safe)
     bias1 = 1 - beta1_t ** step_t
+    bias2 = 1 - beta2_t ** step_t
+    # Clamp exp_avg_sq above bf16 min normal (1.175e-38) to prevent
+    # subnormal values reaching compiled sqrt which produces NaN on gfx1151
+    denom = (exp_avg_sq.clamp_min(1.1755e-38) / bias2).sqrt() + eps_t
     step_size = lr_t / bias1
-    p.mul_(1 - lr_t * wd_t)
     p.add_(exp_avg / denom, alpha=-step_size)
 
 @torch.compile(dynamic=False, fullgraph=True)
@@ -428,32 +419,6 @@ class MuonAdamW(torch.optim.Optimizer):
             adamw_step_fused(p, grad, state['exp_avg'], state['exp_avg_sq'],
                             self._adamw_step_t, self._adamw_lr_t, self._adamw_beta1_t,
                             self._adamw_beta2_t, self._adamw_eps_t, self._adamw_wd_t)
-            # DIAG 23: Compare compiled vs eager denom after each step
-            if state['step'] % 50 == 0 or state['step'] > 550:
-                with torch.no_grad():
-                    # Recompute denom eagerly (same inputs that were just used)
-                    beta2_val = group['betas'][1]
-                    step_val = state['step']
-                    eps_val = group['eps']
-                    bias2_eager = 1 - beta2_val ** step_val
-                    denom_eager = (state['exp_avg_sq'] / bias2_eager).sqrt() + eps_val
-                    # Recompute denom compiled
-                    denom_compiled = compute_denom_compiled(
-                        state['exp_avg_sq'], self._adamw_step_t,
-                        self._adamw_beta2_t, self._adamw_eps_t)
-                    nan_c = torch.isnan(denom_compiled).sum().item()
-                    nan_e = torch.isnan(denom_eager).sum().item()
-                    if nan_c > 0 or nan_e > 0:
-                        print(f"\n  DIAG23: step {state['step']} {p.shape}: compiled_nan={nan_c}, eager_nan={nan_e}")
-                        if nan_c > 0 and nan_e == 0:
-                            # Find the NaN indices
-                            nan_mask = torch.isnan(denom_compiled)
-                            nan_indices = torch.nonzero(nan_mask, as_tuple=False)[:5]  # first 5
-                            for idx in nan_indices:
-                                flat_idx = idx[0] * p.shape[1] + idx[1] if len(idx) > 1 else idx[0]
-                                es_val = state['exp_avg_sq'].flatten()[flat_idx].item()
-                                de_val = denom_eager.flatten()[flat_idx].item()
-                                print(f"    idx={idx.tolist()}: exp_avg_sq={es_val:.8e}, eager_denom={de_val:.8e}, compiled_denom=NaN")
 
     def _step_muon(self, group):
         params = group['params']
@@ -505,7 +470,7 @@ UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.7         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.16      # cautious weight decay for Muon
-ADAM_BETAS = (0.65, 0.97) # Adam beta1, beta2
+ADAM_BETAS = (0.65, 0.95) # Adam beta1, beta2 — DIAG 24: beta2=0.95 to verify clamp workaround
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.65    # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.10     # final LR as fraction of initial
