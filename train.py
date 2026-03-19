@@ -97,7 +97,7 @@ class CausalSelfAttention(nn.Module):
         cos, sin = cos_sin
         q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)
         q, k = norm(q), norm(k)
-        q = q * 1.25  # sharper attention via temperature scaling
+        q = q * 1.35  # sharper attention via temperature scaling
 
         if USE_FA3:
             # FA3: expects (B, T, H, D), returns (B, T, H, D)
