@@ -80,15 +80,17 @@ export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 - VRAM mapping broken
 - Use native Linux or Windows instead
 
-## Known Precision Issues (from #6034)
+## Known Precision Issues (from #6034, corrected by DIAG 1-18)
 
-| Issue | Trigger | Workaround |
-|-------|---------|------------|
-| bf16 accumulation crash | Batch size ≤ 2^13 (8192) | Use larger batches or fp32 |
-| NaN failures | head_dim=32 with bf16 | Use head_dim=64 or higher |
-| Deep network instability | depth ≥ 12 | Reduce depth or use fp32 |
-| Wide aspect ratio crash | aspect_ratio=128 | Use narrower aspect ratios |
-| Learning rate cliff | Specific LR boundaries with bf16 | Careful LR tuning |
+**IMPORTANT**: Our 17 systematic diagnostic experiments (DIAG 1-18) proved that most "bf16 precision bugs" from #6034 are actually **torch.compile code generation bugs on gfx1151**. See `findings_torch_compile_nan_gfx1151.md` for full evidence.
+
+| Issue | Original Hypothesis | Actual Root Cause (per our DIAGs) | Workaround |
+|-------|-------------------|----------------------------------|------------|
+| Small batch NaN | bf16 accumulation overflow | **torch.compile on adamw_step_fused** (DIAG 1 vs 15) | Remove @torch.compile from Adam step |
+| Deep network NaN (depth≥12) | bf16 overflow in deep forward pass | **torch.compile on adamw_step_fused** (DIAG 5 vs 14, 16 vs 16b) | Remove @torch.compile from Adam step |
+| Adam beta2=0.95 NaN | bf16 precision in optimizer | **torch.compile on adamw_step_fused** (DIAG 9 vs 11) | Remove @torch.compile from Adam step |
+| head_dim=32 quality loss | bf16 NaN | No NaN at depth=2; only 2x attention compute cost (DIAG 2) | Use head_dim=64 |
+| Learning rate cliff | bf16 precision boundary | Depth-dependent, not reproduced at depth=2 (DIAG 4) | Tune LR per depth |
 
 ## Performance Notes
 
@@ -101,21 +103,21 @@ export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 - **AOTriton enabled**: 19x speedup (44ms → 2.3ms per attention call)
 
 ### Known Broken
+- **torch.compile on adamw_step_fused**: Produces NaN on gfx1151 (sole root cause of ALL NaN scenarios)
 - **SDPA window_size**: Ignored on ROCm SDPA fallback
 - **Gradient clipping**: Hurts performance with Muon (already normalizes)
 - **Label smoothing**: Terrible for LM pretraining
-- **Adam beta2=0.95**: Diverges at depth=2 with lower LRs
+- **Adam beta2=0.95**: Slightly worse than 0.97 (1.281917 vs 1.280888), not a NaN issue with uncompiled Adam
 
 ## Missing/Unknown
 
 Issues from #6034 not found in separate GitHub issues:
-1. Adam optimizer bf16 precision problems
+1. **torch.compile code-gen bug on gfx1151** producing NaN in Adam optimizer (our primary finding - no existing issue)
 2. SDPA ignoring window_size parameter
 3. amd-smi reporting N/A on gfx1151
 4. TheROCk Linux nightly builds stopping
-5. Systematic bf16 small batch crashes
 
-These may be unique findings requiring new issue reports.
+Note: "bf16 precision bugs" (small batch NaN, deep network NaN, Adam beta2 NaN) have been **reclassified** as torch.compile code-gen bugs based on our 17 systematic experiments. See `findings_torch_compile_nan_gfx1151.md`.
 
 ## Recommended Action Items
 

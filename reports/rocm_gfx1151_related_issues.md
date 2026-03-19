@@ -493,21 +493,29 @@ rocWMMA support for gfx1151 broken in practice despite claimed fixes.
 
 ## 5. Precision and Stability Issues
 
-### Issue #6034: bf16 accumulation bugs (DUPLICATE - Primary Reference)
+### Issue #6034: bf16 bugs (CORRECTED by our diagnostic experiments)
 
 See Section 1 for complete details.
 
-**Specific bf16 Problems Documented**:
+**Original Hypotheses from #6034**:
 1. **Small Batch Crash**: bf16 accumulation crashes at batch sizes ≤2^13
 2. **Head Dimension NaN**: NaN failures with head_dim=32
 3. **Deep Network Instability**: Network instability at depth ≥12
 4. **Aspect Ratio Crash**: Crashes with wide aspect ratios (128)
 5. **Learning Rate Cliff**: Sharp precision boundary at specific learning rates
 
-**Relation to Other Issues**: These precision bugs likely stem from combination of:
-- Firmware memory access issues (#5724, #5824, #5991)
-- VGPR count errors (#2991)
-- MFMA denormal flushing (ROCm blogs document MI2xx GPUs flush denormals to zero)
+**CORRECTED by our 17 diagnostic experiments (DIAG 1-18)**:
+- Items 1, 3 are **NOT bf16 precision bugs** - they are `torch.compile` code-gen bugs on gfx1151
+- Item 2 (head_dim=32) shows no NaN at depth=2, only quality loss from 2x attention compute
+- Item 4 (aspect ratio) and Item 5 (LR cliff) are depth-dependent, not reproduced at depth=2
+- **Root cause**: `torch.compile(adamw_step_fused)` generates incorrect kernel code on gfx1151
+- **Evidence**: Removing `@torch.compile` from Adam step eliminates ALL NaN across all tested configs
+- See `findings_torch_compile_nan_gfx1151.md` for full evidence table
+
+**Actual Root Cause**: `torch.compile` code generation for gfx1151, NOT:
+- ~~Firmware memory access issues~~ (page faults are a separate problem)
+- ~~VGPR count errors~~ (fixed in Dec 2025 nightlies, our nightlies are Jan 2026)
+- ~~MFMA denormal flushing~~ (NaN persists even with fp32 inside compiled kernel)
 
 ---
 
@@ -580,11 +588,12 @@ Removing override restored proper identification: "gfx1201" and "gfx1151"
 
 ### Outstanding Issues
 
-1. **bf16 Precision Bugs**: No direct issues found addressing small batch/head dim crashes
-2. **Adam Optimizer bf16**: No specific issues documenting optimizer precision problems
-3. **SDPA Window Size**: No issues confirming window_size ignored on SDPA fallback
-4. **amd-smi N/A Reporting**: No issues found for amd-smi reporting N/A on gfx1151
-5. **TheROCk Linux Nightly Stopping**: No issues documenting Linux nightly builds stopping
+1. **torch.compile code-gen bug on gfx1151**: No existing issue - our primary novel finding (17 experiments proving compiled Adam step generates NaN)
+2. **SDPA Window Size**: No issues confirming window_size ignored on SDPA fallback
+3. **amd-smi N/A Reporting**: No issues found for amd-smi reporting N/A on gfx1151
+4. **TheROCk Linux Nightly Stopping**: No issues documenting Linux nightly builds stopping
+
+Note: "bf16 precision bugs" and "Adam optimizer bf16" previously listed here have been **reclassified** as torch.compile code-gen bugs.
 
 ---
 
@@ -592,13 +601,13 @@ Removing override restored proper identification: "gfx1201" and "gfx1151"
 
 ### Issues to Create
 
-Based on #6034 findings not yet represented in ROCm issue tracker:
+Based on our diagnostic findings not yet represented in ROCm issue tracker:
 
-1. **bf16 Small Batch NaN**: Document systematic crashes at batch_size ≤2^13 with bf16
-2. **Head Dimension 32 Crash**: Document NaN failures specific to head_dim=32
-3. **Adam bf16 Precision**: Document optimizer precision issues with bf16 accumulators
-4. **SDPA Window Size Ignored**: Document that WINDOW_PATTERN has no effect on SDPA fallback
-5. **amd-smi gfx1151 Support**: Document amd-smi reporting N/A for metrics on gfx1151
+1. **torch.compile code-gen bug on gfx1151**: Compiled Adam optimizer step produces NaN; 17 experiments isolating the cause (HIGH PRIORITY - novel finding with full evidence chain)
+2. **SDPA Window Size Ignored**: Document that WINDOW_PATTERN has no effect on SDPA fallback
+3. **amd-smi gfx1151 Support**: Document amd-smi reporting N/A for metrics on gfx1151
+
+Note: Original items "bf16 Small Batch NaN", "Head Dimension 32 Crash", and "Adam bf16 Precision" have been reclassified as manifestations of the torch.compile bug (item 1).
 
 ### Cross-References Needed
 
