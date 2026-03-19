@@ -25,8 +25,9 @@ torch.compile(adamw_step_fused) on gfx1151
     -> optimizer propagates NaN to all 18 parameters
     -> training dies
 
-Narrowed to: compiled kernel for p.mul_() + pow() + div() + sqrt() + add_() with bf16 stores
-NOT in: compiled lerp_() operations (Stage A clean through step 836)
+Narrowed to: compiled ARITHMETIC (pow/sqrt/div) operating on bf16 data
+NOT in: compiled lerp_() operations (Stage A clean through step 836 - DIAG 20)
+NOT in: compiled in-place bf16 stores (eager stores still NaN because input is NaN - DIAG 21)
 ```
 
 ## Evidence Table
@@ -48,6 +49,7 @@ NOT in: compiled lerp_() operations (Stage A clean through step 836)
 | **16b** | **47c7ad1** | **DEPTH=12, Adam uncompiled, Muon compiled** | **NO** | **-** | **-** | **43 steps clean: Muon compile is SAFE** |
 | 19 | 57cc26e | Dump compiled Triton kernel code | - | - | - | bf16 kernel [1/1] has fp32→bf16 store conversions; fp32 kernel [1/0] has none |
 | **20** | **9b9c623** | **Split Adam: stage A (lerp) + stage B (update)** | **YES** | **step 649 (B)** | **nan** | **Stage B (bias correction+update) first NaN; Stage A (lerp) clean until cascade at 836** |
+| **21** | **56857be** | **Compiled pure arithmetic + eager bf16 stores** | **YES** | **step 622** | **nan** | **Compiled arithmetic returns NaN update tensor BEFORE eager store. Bug is in compiled pow/sqrt/div, NOT in compiled stores** |
 
 ## Detailed Timeline (DIAG 9, compiled Adam, bf16)
 
@@ -202,6 +204,21 @@ Our investigation suggests that at least the Adam beta2 NaN (item 4) is caused b
 - **CONCLUSION**: The bug is specifically in the compiled kernel for bias correction + parameter update:
   `p.mul_(1-lr*wd)`, `bias1 = 1-beta1^step`, `bias2 = 1-beta2^step`, `denom = (exp_avg_sq/bias2).sqrt()+eps`, `step_size = lr/bias1`, `p.add_(exp_avg/denom, alpha=-step_size)`
 - The lerp (momentum) operations compile correctly on gfx1151.
+
+### DIAG 21: Compiled arithmetic vs compiled stores isolation (commit 56857be)
+- Separated Stage B into:
+  - **Compiled pure arithmetic** (`adamw_stage_b_calc`): computes `update = exp_avg / denom * (-step_size)` using pow/sqrt/div but returns the result tensor with NO in-place mutations
+  - **Eager stores**: `p.mul_()` and `p.add_(update)` executed WITHOUT torch.compile
+- NaN monitoring checks the compiled `update` tensor BEFORE and p AFTER eager stores.
+- **DEFINITIVE RESULT**:
+  - Step 622: `update_nan=1, p_nan=0` **BEFORE** eager store (compiled arithmetic PRODUCED the NaN)
+  - Step 622: `p_nan=1` **AFTER** eager store (eager p.add_() just copied the NaN through)
+  - NaN count stays at 1 for hundreds of steps, then cascade at step ~835
+- **CONCLUSION**: The bug is in the **compiled arithmetic** (pow/sqrt/div chain) operating on bf16 input data, NOT in the compiled in-place store instructions.
+  - The compiled `adamw_stage_b_calc` function reads bf16 tensors (exp_avg, exp_avg_sq), performs fp32 scalar arithmetic (pow, div) and tensor arithmetic (div, sqrt, add), and returns a tensor that already contains NaN
+  - Eager bf16 stores work correctly — they just faithfully store whatever value they receive
+  - This refines the DIAG 19 hypothesis: the fp32→bf16 store conversion is NOT the root cause; the arithmetic code-gen is
+- **Cross-reference with DIAG 12**: DIAG 12 forced fp32 computation inside the full compiled kernel and still got NaN. This is consistent: the bug is in the compiled arithmetic code-gen, not in the dtype of the computation.
 
 ## Recommended Actions for AMD/ROCm
 
