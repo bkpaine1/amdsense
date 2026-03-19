@@ -325,10 +325,11 @@ polar_express_coeffs = [
     (2.3465413258596377, -1.7097828382687081, 0.42323551169305323),
 ]
 
-# DIAG 21: Isolate compiled arithmetic vs compiled in-place bf16 stores
+# DIAG 22: Split compiled arithmetic into denom and update computations
 # Stage A: compiled lerp (known clean from DIAG 20)
-# Stage B arithmetic: compiled pure computation returning update tensor (no in-place mutation)
-# Stage B stores: eager p.mul_() and p.add_() (no compilation)
+# compute_denom: compiled pow/div/sqrt on exp_avg_sq
+# compute_update: compiled division of exp_avg by denom
+# Stores: eager (known not to be the bug source from DIAG 21)
 
 @torch.compile(dynamic=False, fullgraph=True)
 def adamw_stage_a(exp_avg, exp_avg_sq, grad, beta1_t, beta2_t):
@@ -337,21 +338,24 @@ def adamw_stage_a(exp_avg, exp_avg_sq, grad, beta1_t, beta2_t):
     exp_avg_sq.lerp_(grad.square(), 1 - beta2_t)
 
 @torch.compile(dynamic=False, fullgraph=True)
-def adamw_stage_b_calc(exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_t, eps_t):
-    """Pure arithmetic - compute update tensor WITHOUT any in-place mutation"""
-    bias1 = 1 - beta1_t ** step_t
+def compute_denom(exp_avg_sq, step_t, beta2_t, eps_t):
+    """Compiled: bias correction + sqrt on exp_avg_sq (bf16 input)"""
     bias2 = 1 - beta2_t ** step_t
     denom = (exp_avg_sq / bias2).sqrt() + eps_t
+    return denom
+
+@torch.compile(dynamic=False, fullgraph=True)
+def compute_update(exp_avg, denom, step_t, lr_t, beta1_t):
+    """Compiled: divide exp_avg by denom, scale by step_size"""
+    bias1 = 1 - beta1_t ** step_t
     step_size = lr_t / bias1
     update = exp_avg / denom * (-step_size)
     return update
 
 def adamw_step_fused(p, grad, exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_t, eps_t, wd_t):
-    # Stage A: compiled lerp (clean)
     adamw_stage_a(exp_avg, exp_avg_sq, grad, beta1_t, beta2_t)
-    # Stage B arithmetic: compiled pure computation (returns update tensor)
-    update = adamw_stage_b_calc(exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_t, eps_t)
-    # Stage B stores: EAGER in-place bf16 mutations (NOT compiled)
+    denom = compute_denom(exp_avg_sq, step_t, beta2_t, eps_t)
+    update = compute_update(exp_avg, denom, step_t, lr_t, beta1_t)
     p.mul_(1 - lr_t * wd_t)
     p.add_(update)
 
@@ -429,28 +433,27 @@ class MuonAdamW(torch.optim.Optimizer):
             self._adamw_beta2_t.fill_(group['betas'][1])
             self._adamw_eps_t.fill_(group['eps'])
             self._adamw_wd_t.fill_(group['weight_decay'])
-            # DIAG 21: Split with compiled arithmetic + eager stores
-            # Stage A: compiled lerp
+            # DIAG 22: Split arithmetic into denom and update
             adamw_stage_a(state['exp_avg'], state['exp_avg_sq'], grad,
                          self._adamw_beta1_t, self._adamw_beta2_t)
-            # Stage B calc: compiled pure arithmetic (returns update tensor)
-            update = adamw_stage_b_calc(state['exp_avg'], state['exp_avg_sq'],
-                         self._adamw_step_t, self._adamw_lr_t, self._adamw_beta1_t,
-                         self._adamw_beta2_t, self._adamw_eps_t)
-            # NaN monitoring: check compiled output before eager store
+            denom = compute_denom(state['exp_avg_sq'], self._adamw_step_t,
+                                  self._adamw_beta2_t, self._adamw_eps_t)
+            # Check NaN in denom (compiled pow/div/sqrt output)
+            if state['step'] % 50 == 0 or state['step'] > 550:
+                nan_d = torch.isnan(denom).sum().item()
+                nan_ea = torch.isnan(state['exp_avg']).sum().item()
+                nan_es = torch.isnan(state['exp_avg_sq']).sum().item()
+                if nan_d > 0 or nan_ea > 0 or nan_es > 0:
+                    print(f"\n  DIAG22: step {state['step']} {p.shape}: denom_nan={nan_d}, exp_avg_nan={nan_ea}, exp_avg_sq_nan={nan_es}")
+            update = compute_update(state['exp_avg'], denom, self._adamw_step_t,
+                                    self._adamw_lr_t, self._adamw_beta1_t)
+            # Check NaN in update (compiled exp_avg/denom output)
             if state['step'] % 50 == 0 or state['step'] > 550:
                 nan_u = torch.isnan(update).sum().item()
-                nan_p_before = torch.isnan(p).sum().item()
-                if nan_u > 0 or nan_p_before > 0:
-                    print(f"\n  DIAG21: step {state['step']} param {p.shape} BEFORE eager store: update_nan={nan_u}, p_nan={nan_p_before}")
-            # Stage B stores: EAGER in-place bf16 mutations
+                if nan_u > 0:
+                    print(f"\n  DIAG22: step {state['step']} {p.shape}: update_nan={nan_u}")
             p.mul_(1 - self._adamw_lr_t * self._adamw_wd_t)
             p.add_(update)
-            # NaN monitoring: check after eager store
-            if state['step'] % 50 == 0 or state['step'] > 550:
-                nan_p_after = torch.isnan(p).sum().item()
-                if nan_p_after > 0:
-                    print(f"\n  DIAG21: step {state['step']} param {p.shape} AFTER eager store: p_nan={nan_p_after}")
 
     def _step_muon(self, group):
         params = group['params']
@@ -502,7 +505,7 @@ UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.7         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.16      # cautious weight decay for Muon
-ADAM_BETAS = (0.65, 0.97) # Adam beta1, beta2
+ADAM_BETAS = (0.65, 0.95) # Adam beta1, beta2 — DIAG 22: beta2=0.95 to trigger compile bug
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.65    # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.10     # final LR as fraction of initial
