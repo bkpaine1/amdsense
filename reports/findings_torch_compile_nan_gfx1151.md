@@ -76,6 +76,8 @@ Isolation chain:
 | **21** | **56857be** | **Compiled pure arithmetic + eager bf16 stores** | **YES** | **step 622** | **nan** | **Compiled arithmetic returns NaN update tensor BEFORE eager store. Bug is in compiled pow/sqrt/div, NOT in compiled stores** |
 | **22** | **476b052** | **Split: compute_denom + compute_update** | **YES** | **step 633** | **nan** | **denom_nan=1 from CLEAN exp_avg_sq. Bug is in compiled `(exp_avg_sq/bias2).sqrt()+eps`** |
 | **23** | **edb2ccf** | **Compiled vs eager + value dump + minimal reproducer** | **YES** | **step 681** | **nan** | **ROOT CAUSE: compiled sqrt(subnormal)=NaN. exp_avg_sq=1.15e-38 (subnormal) triggers it. Standalone reproducer confirms.** |
+| **24** | **18b4f53** | **Workaround: clamp exp_avg_sq above subnormal** | **NO** | **-** | **1.281410** | **beta2=0.95 + compiled Adam: ZERO NaN with clamp_min(1.1755e-38)** |
+| **24b** | **3ed8de0** | **Production: clamp + beta2=0.97** | **NO** | **-** | **1.280383** | **NEW BEST val_bpb! Compiled Adam with subnormal clamp = safe + optimal** |
 
 ## Detailed Timeline (DIAG 9, compiled Adam, bf16)
 
@@ -122,32 +124,53 @@ The NaN spreads one value at a time within a single embedding row, then to addit
 
 ## Reproduction
 
+### Minimal reproducer (7 lines, no training required)
 ```python
-# Minimal reproduction conditions:
-# - gfx1151 hardware (AMD Radeon 8060S / Strix Halo)
-# - PyTorch 2.11.0a0+rocm7.11.0a20260106
-# - torch.compile on an Adam optimizer step processing bf16 embedding parameters
-# - Adam beta2=0.95 (beta2=0.97 may work within short training runs)
+import torch
+x = torch.full((1024,), 1.14e-38, dtype=torch.bfloat16, device='cuda')  # subnormal
 
-@torch.compile(dynamic=False, fullgraph=True)
-def adamw_step_fused(p, grad, exp_avg, exp_avg_sq, step_t, lr_t, beta1_t, beta2_t, eps_t, wd_t):
-    p.mul_(1 - lr_t * wd_t)
-    exp_avg.lerp_(grad, 1 - beta1_t)
-    exp_avg_sq.lerp_(grad.square(), 1 - beta2_t)
-    bias1 = 1 - beta1_t ** step_t
-    bias2 = 1 - beta2_t ** step_t
-    denom = (exp_avg_sq / bias2).sqrt() + eps_t
-    step_size = lr_t / bias1
-    p.add_(exp_avg / denom, alpha=-step_size)
+@torch.compile
+def f(x): return x.sqrt()
 
-# When called with bf16 embedding parameters on gfx1151,
-# this compiled kernel produces NaN at step ~586 with beta2=0.95.
-# Removing @torch.compile eliminates the NaN entirely.
+print(torch.isnan(f(x)).sum())  # gfx1151: 1024 (ALL NaN) — BUG
+print(torch.isnan(x.sqrt()).sum())  # eager: 0 (correct)
 ```
 
-## Workaround
+### Extended reproducer (tests all edge cases)
+See `reports/minimal_reproducer_subnormal_nan.py` — confirms:
+- `compiled sqrt(bf16 subnormal)` → NaN (100% failure rate)
+- `compiled sqrt(bf16 normal)` → correct
+- `compiled div(bf16 subnormal, 1.0)` → correct (only sqrt is broken)
+- `compiled sqrt(fp32 subnormal)` → also NaN (not bf16-specific)
+- `eager sqrt(any value)` → always correct
 
-Remove `@torch.compile` from the Adam optimizer step function. There is no performance regression since the Adam step is not the bottleneck (the main model forward/backward is compiled separately and works correctly).
+### Training-level reproduction
+```python
+# In the Adam optimizer step, after ~600+ steps, cold embedding rows'
+# exp_avg_sq decays to bf16 subnormal range. The compiled denom calculation:
+denom = (exp_avg_sq / bias2).sqrt() + eps_t
+# produces NaN for those subnormal entries, eventually cascading to full collapse.
+```
+
+## Workarounds
+
+### Option 1: Clamp exp_avg_sq above subnormal range (RECOMMENDED)
+```python
+@torch.compile(dynamic=False, fullgraph=True)
+def adamw_step_fused(p, grad, exp_avg, exp_avg_sq, ...):
+    ...
+    # Clamp exp_avg_sq above bf16 min normal to avoid compiled sqrt(subnormal) NaN
+    denom = (exp_avg_sq.clamp_min(1.1755e-38) / bias2).sqrt() + eps_t
+    ...
+```
+- **Preserves compiled Adam performance** (no recompilation overhead)
+- DIAG 24: beta2=0.95 + clamp → ZERO NaN, val_bpb=1.281410
+- DIAG 24b: beta2=0.97 + clamp → ZERO NaN, val_bpb=1.280383 (new best)
+- The clamp only affects subnormal values (~1e-38) which are already negligible in the Adam denominator (eps=1e-10 dominates)
+
+### Option 2: Remove @torch.compile from Adam step
+- No performance regression (Adam step is not the bottleneck)
+- DIAG 11: uncompiled Adam → ZERO NaN, val_bpb=1.281545
 
 ## Relation to ROCm Issue #6034
 
