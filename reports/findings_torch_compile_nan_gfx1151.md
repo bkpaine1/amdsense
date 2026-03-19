@@ -8,7 +8,10 @@
 
 ## Executive Summary
 
-Through 14 systematic diagnostic experiments, we isolated a **torch.compile code generation bug on gfx1151** that produces NaN values in compiled optimizer kernels (both Adam and Muon). The bug is NOT a bf16 precision issue - it persists even when all computation inside the compiled function is done in fp32. Disabling `torch.compile` on optimizer step functions completely eliminates the NaN while producing identical training quality. The bug affects both shallow models (depth=2, NaN at step ~586 with Adam beta2=0.95) and deep models (depth=12, NaN at step 6 with compiled optimizers).
+Through 15 systematic diagnostic experiments, we isolated a **torch.compile code generation bug on gfx1151** that produces NaN values in compiled optimizer kernels (both Adam and Muon). The bug is NOT a bf16 precision issue - it persists even when all computation inside the compiled function is done in fp32. Disabling `torch.compile` on optimizer step functions completely eliminates ALL NaN scenarios we tested:
+- Shallow model (depth=2) with Adam beta2=0.95: NaN at step ~586 with compile, clean 1062 steps without
+- Deep model (depth=12): NaN at step 6 with compile, clean 42 steps without
+- Small batch (2^13): NaN at step 1783 with compile, clean 3540 steps without
 
 ## Root Cause Chain
 
@@ -35,6 +38,7 @@ torch.compile(adamw_step_fused) on gfx1151
 | 12 | 0ea95be | Compiled Adam with fp32 math | YES | step 711 | nan | NaN even with fp32 inside compile |
 | 13 | 1bb1db2 | Baseline beta2=0.97 NaN monitoring | NO | - | 1.280839 | Compile bug needs beta2=0.95 to trigger at depth=2 |
 | **14** | **26e39fe** | **DEPTH=12, optimizer compile OFF** | **NO** | **-** | **-** | **42 steps clean (vs step 6 crash in DIAG 5)** |
+| **15** | **1139bfa** | **Small batch 2^13, optimizer compile OFF** | **NO** | **-** | **1.315537** | **3540 steps clean (vs NaN at 1783 in DIAG 1)** |
 
 ## Detailed Timeline (DIAG 9, compiled Adam, bf16)
 
@@ -126,9 +130,15 @@ Our investigation suggests that at least the Adam beta2 NaN (item 4) is caused b
 
 ## Additional Diagnostic Results
 
-### DIAG 1: Small batch size (TOTAL_BATCH_SIZE=2^13)
+### DIAG 1: Small batch size (TOTAL_BATCH_SIZE=2^13, compiled optimizer)
 - NaN at step 1783/3644 (later than original report's "within 15 steps")
-- Different mechanism from Adam compile NaN (this one may be genuine bf16 accumulation overflow)
+- Originally hypothesized as genuine bf16 accumulation overflow
+
+### DIAG 15: Small batch size (TOTAL_BATCH_SIZE=2^13, optimizer compile DISABLED)
+- NO NaN in 3540 steps (complete run), val_bpb=1.315537
+- **KEY FINDING**: Small batch NaN is ALSO caused by torch.compile, not bf16 precision
+- The "bf16 accumulation overflow" hypothesis from DIAG 1 was WRONG - same compiler bug
+- With more steps (3540 vs 1067 in baseline), the compiler bug manifests later (step 1783)
 
 ### DIAG 2: HEAD_DIM=32 at depth=2
 - NO NaN, only quality loss from 2x attention compute
